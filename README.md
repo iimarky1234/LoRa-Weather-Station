@@ -36,21 +36,19 @@ Autonomous, low-cost microclimate monitoring node and LoRa relay built on the **
 ### 1. Upload All Firmware Files to ESP32
 
 ```bash
-mpremote connect /dev/ttyACM0 cp firmware/*.py :
-# Set main_app.py as the automatic boot script:
-mpremote connect /dev/ttyACM0 cp firmware/main_app.py :main.py
+mpremote connect /dev/ttyACMx cp firmware/*.py :
 ```
 
 ### 2. Run the Full Hardware Self-Test
 
 ```bash
-mpremote connect /dev/ttyACM0 run tests/test_weather_station.py
+mpremote connect /dev/ttyACMx run tests/test_weather_station.py
 ```
 
 ### 3. Run the Live Web Dashboard
 
 ```bash
-mpremote connect /dev/ttyACM0 run firmware/main_app.py
+mpremote connect /dev/ttyACMx run firmware/main.py
 ```
 
 ### 4. Access the Web Dashboard
