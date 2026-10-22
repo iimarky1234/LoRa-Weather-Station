@@ -84,7 +84,7 @@ class StorageManager:
 
             # Create new file with header
             with open(config.LOG_FILE_PATH, "w") as f:
-                f.write("timestamp,temperature_c,humidity_pct,light_lux,soil_moisture_pct,soil_voltage_mv\n")
+                f.write("timestamp,temperature_c,humidity_pct,light_lux,soil_moisture_pct\n")
             print(f"[INFO] Created new log file: {config.LOG_FILE_PATH}")
         except Exception as e:
             print("[WARN] Error checking/creating CSV header:", e)
@@ -107,13 +107,12 @@ class StorageManager:
                 if self.cs_lora:
                     self.cs_lora.value(1)
 
-                line = "{},{},{},{},{},{}\n".format(
+                line = "{},{},{},{},{}\n".format(
                     data["timestamp"],
                     data["temperature"],
                     data["humidity"],
                     data["lux"],
-                    data["soil_pct"],
-                    data["soil_mv"]
+                    data["soil_pct"]
                 )
                 with open(config.LOG_FILE_PATH, "a") as f:
                     f.write(line)

@@ -1,2 +1,4 @@
 .obsidian/
 tests/
+__pycache__/
+*.pyc

@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WeatherStation">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<title>LoRa Weather Station - Cloud Dashboard</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #f8fafc;
+  --subtext: #94a3b8;
+  --accent: #38bdf8;
+  --border: #334155;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --red: #ef4444;
+  --orange: #f97316;
+  --cyan: #06b6d4;
+  --purple: #a855f7;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+h1 {
+  font-size: 1.5rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.02em;
+}
+
+.badge-group {
+  display: inline-flex;
+  gap: 6px;
+  vertical-align: middle;
+}
+
+.badge {
+  background: #0369a1;
+  color: #e0f2fe;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-cloud {
+  background: #4338ca;
+  color: #e0e7ff;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #064e3b;
+  color: #a7f3d0;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.status-pill.paused {
+  background: #451a03;
+  color: #fed7aa;
+}
+
+.status-pill.error {
+  background: #450a0a;
+  color: #fecaca;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.dot.paused {
+  background: var(--yellow);
+  animation: none;
+}
+
+.dot.error {
+  background: var(--red);
+  animation: none;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.85); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 9px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s, transform 0.1s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:hover {
+  background: #1d4ed8;
+}
+
+.btn-green {
+  background: #059669;
+}
+.btn-green:hover {
+  background: #047857;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-outline:hover {
+  background: var(--card);
+}
+
+.btn-install {
+  background: #7c3aed;
+  display: none;
+}
+.btn-install:hover {
+  background: #6d28d9;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--subtext);
+  margin-bottom: 8px;
+}
+
+.card-val {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+  line-height: 1.1;
+}
+
+.card-unit {
+  font-size: 1.1rem;
+  color: var(--subtext);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+.card-sub {
+  font-size: 0.75rem;
+  color: var(--subtext);
+}
+
+.bar {
+  width: 100%;
+  height: 6px;
+  background: #334155;
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: center;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+.table-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  color: var(--subtext);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+td {
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+  padding: 10px 12px;
+  color: #cbd5e1;
+}
+
+tr:hover td {
+  background: #334155;
+}
+
+/* Modal Dialog */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-content {
+  background: #1e293b;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--subtext);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #fff;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  border-color: var(--accent);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Mobile specific styling */
+@media (max-width: 640px) {
+  body {
+    padding: 12px;
+  }
+  h1 {
+    font-size: 1.25rem;
+  }
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .card {
+    padding: 12px;
+  }
+  .card-val {
+    font-size: 1.75rem;
+  }
+  .actions {
+    gap: 8px;
+  }
+  .btn {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div>
+      <h1>
+        <span>🌦️ Weather Station</span>
+        <span class="badge-group">
+          <span class="badge">ESP32-S3</span>
+          <span class="badge badge-cloud">ThingSpeak Cloud</span>
+        </span>
+      </h1>
+      <p style="color:var(--subtext);font-size:0.8rem;margin-top:4px;">
+        Real-Time Cloud Telemetry & Microclimate Monitor
+      </p>
+    </div>
+    <div>
+      <span class="status-pill" id="statusPill">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Connecting...</span>
+      </span>
+    </div>
+  </header>
+
+  <div class="actions">
+    <button onclick="fetchData(true)" class="btn btn-outline" id="btnRefresh" title="Fetch latest data immediately">
+      🔄 Refresh Now
+    </button>
+    <button onclick="toggleAutoRefresh()" class="btn btn-outline" id="btnPause" title="Pause or resume auto sync">
+      ⏸️ Pause Sync
+    </button>
+    <button onclick="exportCSV()" class="btn btn-green" id="btnExport" title="Export historical telemetry to CSV">
+      📥 Download CSV
+    </button>
+    <button onclick="openSettingsModal()" class="btn btn-outline" id="btnSettings" title="Configure Channel ID and API Key">
+      ⚙️ Settings
+    </button>
+    <button onclick="installPWA()" class="btn btn-install" id="btnInstall" title="Install to Home Screen">
+      📱 Install App
+    </button>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-header"><span>TEMPERATURE</span><span>🌡️</span></div>
+      <div class="card-val"><span id="valTemp">--</span><span class="card-unit">°C</span></div>
+      <div class="card-sub">Air Temp (DHT11)</div>
+      <div class="bar"><div id="barTemp" class="bar-fill" style="background:var(--orange);"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span>HUMIDITY</span><span>💧</span></div>
+      <div class="card-val"><span id="valHum">--</span><span class="card-unit">%</span></div>
+      <div class="card-sub">Relative Humidity (DHT11)</div>
+      <div class="bar"><div id="barHum" class="bar-fill" style="background:var(--cyan);"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span>AMBIENT LIGHT</span><span>☀️</span></div>
+      <div class="card-val"><span id="valLux">--</span><span class="card-unit">Lux</span></div>
+      <div class="card-sub">Calibrated Illuminance (BH1750)</div>
+      <div class="bar"><div id="barLux" class="bar-fill" style="background:var(--yellow);"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span>SOIL MOISTURE</span><span>🌱</span></div>
+      <div class="card-val"><span id="valSoil">--</span><span class="card-unit">%</span></div>
+      <div class="card-sub" id="subSoil">Substrate Saturation</div>
+      <div class="bar"><div id="barSoil" class="bar-fill" style="background:var(--green);"></div></div>
+    </div>
+  </div>
+
+  <div class="status-box">
+    <div class="status-item">
+      🕒 <strong>Latest Reading:</strong> <span id="valTime" style="color:var(--accent);">--</span>
+    </div>
+    <div class="status-item">
+      ☁️ <strong>Channel:</strong> <span id="valChannel" style="color:#a78bfa;">3543024</span>
+    </div>
+    <div class="status-item">
+      🆔 <strong>Last Entry:</strong> <span id="valEntry" style="color:var(--green);">#0</span>
+    </div>
+    <div class="status-item">
+      ⏱️ <strong>Next Sync:</strong> <span id="valCountdown" style="color:var(--subtext);">20s</span>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <h3 style="font-size:1rem;color:#f1f5f9;">Recent Telemetry History</h3>
+      <span style="font-size:0.75rem;color:var(--subtext);" id="tableCount">Showing last 30 readings</span>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Entry ID</th>
+            <th>Timestamp (Local)</th>
+            <th>Temp (°C)</th>
+            <th>Humidity (%)</th>
+            <th>Light (Lux)</th>
+            <th>Soil Moisture (%)</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="6" style="text-align:center;padding:24px;color:var(--subtext);">
+              Connecting to ThingSpeak Cloud...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal Dialog -->
+<div class="modal-overlay" id="settingsModal" onclick="handleModalOverlayClick(event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="color:#f8fafc;font-size:1.1rem;display:flex;align-items:center;gap:6px;">
+        ⚙️ Dashboard Settings
+      </h3>
+      <button onclick="closeSettingsModal()" style="background:transparent;border:none;color:var(--subtext);font-size:1.4rem;cursor:pointer;">&times;</button>
+    </div>
+    <div class="form-group">
+      <label for="cfgChannelId">ThingSpeak Channel ID</label>
+      <input type="text" id="cfgChannelId" class="form-input" placeholder="e.g. 3543024">
+    </div>
+    <div class="form-group">
+      <label for="cfgReadKey">Read API Key</label>
+      <input type="text" id="cfgReadKey" class="form-input" placeholder="e.g. WK8Z6FH8W8UTJS7Q">
+    </div>
+    <div class="form-group">
+      <label for="cfgInterval">Auto-Sync Interval (seconds)</label>
+      <input type="number" id="cfgInterval" class="form-input" min="15" max="300" placeholder="20 (min 15)">
+      <span style="font-size:0.7rem;color:var(--subtext);">ThingSpeak free tier enforces a minimum of 15 seconds.</span>
+    </div>
+    <div class="form-group">
+      <label for="cfgResults">Feeds to Retrieve</label>
+      <input type="number" id="cfgResults" class="form-input" min="5" max="100" placeholder="30">
+    </div>
+    <div class="modal-actions">
+      <button onclick="resetSettingsDefaults()" class="btn btn-outline" style="margin-right:auto;">Reset Defaults</button>
+      <button onclick="closeSettingsModal()" class="btn btn-outline">Cancel</button>
+      <button onclick="saveSettings()" class="btn btn-green">Save & Sync</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Default configuration
+const DEFAULT_CONFIG = {
+  channelId: '3543024',
+  readKey: 'WK8Z6FH8W8UTJS7Q',
+  intervalSec: 20,
+  resultsCount: 30
+};
+
+let currentConfig = { ...DEFAULT_CONFIG };
+let autoRefresh = true;
+let countdownTimer = null;
+let secondsUntilNextSync = 20;
+let feedsData = [];
+let deferredInstallPrompt = null;
+
+// Load stored settings from localStorage if available
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem('weather_station_cfg');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      currentConfig.channelId = parsed.channelId || DEFAULT_CONFIG.channelId;
+      currentConfig.readKey = parsed.readKey || DEFAULT_CONFIG.readKey;
+      currentConfig.intervalSec = parseInt(parsed.intervalSec, 10) || DEFAULT_CONFIG.intervalSec;
+      currentConfig.resultsCount = parseInt(parsed.resultsCount, 10) || DEFAULT_CONFIG.resultsCount;
+    }
+  } catch (e) {
+    console.warn('Failed to load localStorage configuration:', e);
+  }
+}
+
+function saveSettings() {
+  const ch = document.getElementById('cfgChannelId').value.trim();
+  const key = document.getElementById('cfgReadKey').value.trim();
+  const interval = parseInt(document.getElementById('cfgInterval').value, 10);
+  const results = parseInt(document.getElementById('cfgResults').value, 10);
+
+  if (!ch) {
+    alert('Please enter a valid Channel ID.');
+    return;
+  }
+  if (!key) {
+    alert('Please enter a Read API Key.');
+    return;
+  }
+
+  currentConfig.channelId = ch;
+  currentConfig.readKey = key;
+  currentConfig.intervalSec = Math.max(15, interval || 20);
+  currentConfig.resultsCount = Math.max(5, Math.min(100, results || 30));
+
+  try {
+    localStorage.setItem('weather_station_cfg', JSON.stringify(currentConfig));
+  } catch (e) {}
+
+  closeSettingsModal();
+  secondsUntilNextSync = currentConfig.intervalSec;
+  fetchData(true);
+}
+
+function resetSettingsDefaults() {
+  document.getElementById('cfgChannelId').value = DEFAULT_CONFIG.channelId;
+  document.getElementById('cfgReadKey').value = DEFAULT_CONFIG.readKey;
+  document.getElementById('cfgInterval').value = DEFAULT_CONFIG.intervalSec;
+  document.getElementById('cfgResults').value = DEFAULT_CONFIG.resultsCount;
+}
+
+function openSettingsModal() {
+  document.getElementById('cfgChannelId').value = currentConfig.channelId;
+  document.getElementById('cfgReadKey').value = currentConfig.readKey;
+  document.getElementById('cfgInterval').value = currentConfig.intervalSec;
+  document.getElementById('cfgResults').value = currentConfig.resultsCount;
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+
+function closeSettingsModal() {
+  document.getElementById('settingsModal').style.display = 'none';
+}
+
+function handleModalOverlayClick(e) {
+  if (e.target.id === 'settingsModal') {
+    closeSettingsModal();
+  }
+}
+
+// Format UTC ISO date to clean readable local timestamp
+function formatLocalDate(isoStr) {
+  if (!isoStr) return '--';
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return isoStr;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    const secs = String(d.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${mins}:${secs}`;
+  } catch (e) {
+    return isoStr;
+  }
+}
+
+// Fetch telemetry feeds from ThingSpeak Cloud REST API
+async function fetchData(manual = false) {
+  const pill = document.getElementById('statusPill');
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+
+  if (manual) {
+    txt.innerText = 'Syncing...';
+  }
+
+  const url = `https://api.thingspeak.com/channels/${currentConfig.channelId}/feeds.json?api_key=${currentConfig.readKey}&results=${currentConfig.resultsCount}`;
+
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (!data || !data.feeds) {
+      throw new Error('Malformed feed response');
+    }
+
+    feedsData = data.feeds;
+    const channel = data.channel || {};
+
+    // Update Channel metadata
+    document.getElementById('valChannel').innerText = `${channel.name || 'LoRa Weather'} (#${currentConfig.channelId})`;
+    document.getElementById('valEntry').innerText = `#${channel.last_entry_id || (feedsData.length ? feedsData[feedsData.length - 1].entry_id : 0)}`;
+
+    if (feedsData.length > 0) {
+      const latest = feedsData[feedsData.length - 1];
+      const temp = parseFloat(latest.field1);
+      const hum = parseFloat(latest.field2);
+      const lux = parseFloat(latest.field3);
+      const soil = parseFloat(latest.field4);
+
+      // Temperature
+      document.getElementById('valTemp').innerText = isNaN(temp) ? '--' : temp.toFixed(1);
+      document.getElementById('barTemp').style.width = isNaN(temp) ? '0%' : Math.min(100, Math.max(0, (temp / 50) * 100)) + '%';
+
+      // Humidity
+      document.getElementById('valHum').innerText = isNaN(hum) ? '--' : Math.round(hum);
+      document.getElementById('barHum').style.width = isNaN(hum) ? '0%' : Math.min(100, Math.max(0, hum)) + '%';
+
+      // Ambient Light
+      document.getElementById('valLux').innerText = isNaN(lux) ? '--' : Math.round(lux);
+      document.getElementById('barLux').style.width = isNaN(lux) ? '0%' : Math.min(100, Math.max(0, (lux / 2000) * 100)) + '%';
+
+      // Soil Moisture
+      document.getElementById('valSoil').innerText = isNaN(soil) ? '--' : soil.toFixed(1);
+      document.getElementById('barSoil').style.width = isNaN(soil) ? '0%' : Math.min(100, Math.max(0, soil)) + '%';
+
+      // Timestamp
+      document.getElementById('valTime').innerText = formatLocalDate(latest.created_at);
+    }
+
+    // Render Table
+    renderTable(feedsData);
+
+    // Update pill status
+    pill.className = 'status-pill' + (autoRefresh ? '' : ' paused');
+    dot.className = 'dot' + (autoRefresh ? '' : ' paused');
+    txt.innerText = autoRefresh ? 'Live Cloud Sync' : 'Sync Paused';
+    secondsUntilNextSync = currentConfig.intervalSec;
+
+  } catch (err) {
+    console.error('ThingSpeak sync error:', err);
+    pill.className = 'status-pill error';
+    dot.className = 'dot error';
+    txt.innerText = 'Sync Error';
+  }
+}
+
+// Render historical telemetry table (reverse order: latest on top)
+function renderTable(feeds) {
+  const tbody = document.getElementById('tableBody');
+  const countLabel = document.getElementById('tableCount');
+
+  if (!feeds || feeds.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--subtext);">No telemetry feeds found.</td></tr>';
+    countLabel.innerText = '0 readings';
+    return;
+  }
+
+  countLabel.innerText = `Showing last ${feeds.length} readings`;
+
+  let rowsHtml = '';
+  for (let i = feeds.length - 1; i >= 0; i--) {
+    const f = feeds[i];
+    const t = parseFloat(f.field1);
+    const h = parseFloat(f.field2);
+    const l = parseFloat(f.field3);
+    const s = parseFloat(f.field4);
+
+    rowsHtml += `<tr>
+      <td><strong>#${f.entry_id}</strong></td>
+      <td>${formatLocalDate(f.created_at)}</td>
+      <td style="color:#fdba74;"><strong>${isNaN(t) ? '--' : t.toFixed(1)}</strong></td>
+      <td style="color:#67e8f9;">${isNaN(h) ? '--' : Math.round(h)}%</td>
+      <td style="color:#fde047;">${isNaN(l) ? '--' : Math.round(l)}</td>
+      <td style="color:#86efac;">${isNaN(s) ? '--' : s.toFixed(1)}%</td>
+    </tr>`;
+  }
+  tbody.innerHTML = rowsHtml;
+}
+
+// Export fetched data to CSV
+function exportCSV() {
+  if (!feedsData || feedsData.length === 0) {
+    alert('No telemetry data available to export.');
+    return;
+  }
+
+  let csvContent = "Entry_ID,Timestamp_UTC,Timestamp_Local,Temperature_C,Humidity_Pct,Light_Lux,Soil_Moisture_Pct\r\n";
+  feedsData.forEach(f => {
+    const localTime = formatLocalDate(f.created_at);
+    csvContent += `${f.entry_id},"${f.created_at}","${localTime}",${f.field1 || ''},${f.field2 || ''},${f.field3 || ''},${f.field4 || ''}\r\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.setAttribute('download', `weather_station_${currentConfig.channelId}_${Date.now()}.csv`);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Auto-refresh countdown management
+function toggleAutoRefresh() {
+  autoRefresh = !autoRefresh;
+  const btn = document.getElementById('btnPause');
+  const pill = document.getElementById('statusPill');
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+
+  if (autoRefresh) {
+    btn.innerHTML = '⏸️ Pause Sync';
+    pill.className = 'status-pill';
+    dot.className = 'dot';
+    txt.innerText = 'Live Cloud Sync';
+    secondsUntilNextSync = currentConfig.intervalSec;
+  } else {
+    btn.innerHTML = '▶️ Resume Sync';
+    pill.className = 'status-pill paused';
+    dot.className = 'dot paused';
+    txt.innerText = 'Sync Paused';
+    document.getElementById('valCountdown').innerText = 'Paused';
+  }
+}
+
+function startCountdown() {
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    if (!autoRefresh) return;
+
+    secondsUntilNextSync--;
+    if (secondsUntilNextSync <= 0) {
+      secondsUntilNextSync = currentConfig.intervalSec;
+      fetchData();
+    } else {
+      document.getElementById('valCountdown').innerText = `${secondsUntilNextSync}s`;
+    }
+  }, 1000);
+}
+
+// Progressive Web App installation support
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const installBtn = document.getElementById('btnInstall');
+  if (installBtn) {
+    installBtn.style.display = 'inline-flex';
+  }
+});
+
+function installPWA() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then((choiceResult) => {
+    if (choiceResult.outcome === 'accepted') {
+      const installBtn = document.getElementById('btnInstall');
+      if (installBtn) installBtn.style.display = 'none';
+    }
+    deferredInstallPrompt = null;
+  });
+}
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('PWA ServiceWorker registered with scope:', reg.scope))
+      .catch(err => console.log('PWA ServiceWorker registration failed:', err));
+  });
+}
+
+// Keyboard shortcuts (Escape closes modal)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSettingsModal();
+});
+
+// Initialization
+loadSettings();
+fetchData(true);
+startCountdown();
+</script>
+
+</body>
+</html>

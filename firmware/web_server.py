@@ -108,7 +108,7 @@ tr:hover td { background: #334155; }
     <div class="card">
       <div class="card-header"><span>SOIL MOISTURE</span><span>🌱</span></div>
       <div class="card-val"><span id="valSoil">--</span><span class="card-unit">%</span></div>
-      <div class="card-sub" id="subSoil">Raw Voltage: -- mV</div>
+      <div class="card-sub" id="subSoil">Substrate Moisture</div>
       <div class="bar"><div id="barSoil" class="bar-fill" style="background:#22c55e;"></div></div>
     </div>
   </div>
@@ -134,11 +134,10 @@ tr:hover td { background: #334155; }
             <th>Humidity (%)</th>
             <th>Light (Lux)</th>
             <th>Soil (%)</th>
-            <th>Soil (mV)</th>
           </tr>
         </thead>
         <tbody id="tableBody">
-          <tr><td colspan="6" style="text-align:center;color:var(--subtext);">Waiting for sensor telemetry...</td></tr>
+          <tr><td colspan="5" style="text-align:center;color:var(--subtext);">Waiting for sensor telemetry...</td></tr>
         </tbody>
       </table>
     </div>
@@ -159,7 +158,6 @@ async function fetchData() {
     document.getElementById('valHum').innerText = d.humidity.toFixed(0);
     document.getElementById('valLux').innerText = d.lux.toFixed(0);
     document.getElementById('valSoil').innerText = d.soil_pct.toFixed(1);
-    document.getElementById('subSoil').innerText = 'Raw Voltage: ' + d.soil_mv + ' mV';
     document.getElementById('valTime').innerText = d.timestamp;
     
     // Bars
@@ -202,7 +200,6 @@ async function fetchHistory() {
         <td>${r.humidity.toFixed(0)}%</td>
         <td>${r.lux.toFixed(0)}</td>
         <td>${r.soil_pct.toFixed(1)}%</td>
-        <td>${r.soil_mv}</td>
       </tr>`;
     }
     tbody.innerHTML = rowsHtml;
@@ -268,7 +265,6 @@ class WebServer:
             "humidity": 0.0,
             "lux": 0.0,
             "soil_pct": 0.0,
-            "soil_mv": 0,
             "sd_mounted": False,
             "log_count": 0,
             "log_size": 0
@@ -403,6 +399,18 @@ class WebServer:
     async def start(self):
         """Starts the asynchronous HTTP server on port 80."""
         print(f"[INFO] Starting HTTP Web Server on port {config.SERVER_PORT}...")
-        server = await asyncio.start_server(self.handle_client, "0.0.0.0", config.SERVER_PORT)
+        self.server = await asyncio.start_server(self.handle_client, "0.0.0.0", config.SERVER_PORT)
         print(f"[OK] Web Server listening on port {config.SERVER_PORT}")
-        return server
+        return self.server
+
+    async def stop(self):
+        """Stops the HTTP server cleanly."""
+        if hasattr(self, "server") and self.server:
+            print("[INFO] Stopping HTTP Web Server...")
+            try:
+                self.server.close()
+                await self.server.wait_closed()
+            except Exception:
+                pass
+            self.server = None
+            print("[OK] Web Server stopped.")
