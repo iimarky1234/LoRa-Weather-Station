@@ -4,31 +4,19 @@
 # ==============================================================================
 from machine import Pin
 import neopixel
-import config
+import time
 
 class StatusLED:
-    def __init__(self, pin_primary=None, pin_secondary=None, brightness=None):
-        self.brightness = brightness if brightness is not None else getattr(config, "LED_BRIGHTNESS", 40)
-        self.brightness = max(0, min(255, self.brightness))
+    def __init__(self, pin_primary=48, pin_secondary=38, brightness=40):
+        self.brightness = max(0, min(255, brightness))
         self.leds = []
 
-        pins = []
-        if pin_primary is not None:
-            pins.append(pin_primary)
-        else:
-            pins.append(getattr(config, "PIN_RGB_LED_PRIMARY", 48))
-
-        if pin_secondary is not None:
-            pins.append(pin_secondary)
-        else:
-            pins.append(getattr(config, "PIN_RGB_LED_SECONDARY", 38))
-
-        for pin_num in pins:
+        for pin_num in (pin_primary, pin_secondary):
             try:
                 np = neopixel.NeoPixel(Pin(pin_num), 1)
                 self.leds.append(np)
-            except Exception as e:
-                print(f"[WARN] Could not initialize NeoPixel on GPIO {pin_num}: {e}")
+            except Exception:
+                pass
 
         self.turn_off()
 
@@ -47,23 +35,23 @@ class StatusLED:
                 pass
 
     def set_green(self):
-        """Solid GREEN: Online & data sent to ThingSpeak successfully."""
+        """Solid GREEN: Online / Normal Cloud Sync."""
         self.set_color(0, 255, 0)
 
     def set_yellow(self):
-        """Solid YELLOW: Offline & local hosting web dashboard."""
+        """Solid YELLOW: Localhost / Offline Dashboard Mode."""
         self.set_color(255, 180, 0)
 
     def set_red(self):
-        """Solid RED: Error (ThingSpeak failed / sensor error / SD card error)."""
+        """Solid RED: Critical Error State."""
         self.set_color(255, 0, 0)
 
     def set_blue(self):
-        """Solid BLUE: Connecting / Booting."""
+        """Solid BLUE: Booting / Connecting."""
         self.set_color(0, 100, 255)
 
     def set_grey(self):
-        """Solid GREY / Dim White."""
+        """Solid GREY / Dim White: Wi-Fi Searching."""
         self.set_color(128, 128, 128)
 
     def turn_off(self):
@@ -74,3 +62,9 @@ class StatusLED:
                 np.write()
             except Exception:
                 pass
+
+    def flash_blue(self, duration_ms=150):
+        """Briefly flashes Blue to indicate LoRa packet received / sent."""
+        self.set_blue()
+        time.sleep_ms(duration_ms)
+        self.turn_off()
