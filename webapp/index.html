@@ -11,7 +11,11 @@
 <link rel="icon" type="image/png" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-<title>LoRa Weather Station - Cloud Dashboard</title>
+<!-- Leaflet.js Dark Mode Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<title>LoRa Weather Station - Multi-Node Cloud Dashboard</title>
 <style>
 :root {
   --bg: #0f172a;
@@ -26,6 +30,7 @@
   --orange: #f97316;
   --cyan: #06b6d4;
   --purple: #a855f7;
+  --indigo: #6366f1;
 }
 
 * {
@@ -43,7 +48,7 @@ body {
 }
 
 .container {
-  max-width: 960px;
+  max-width: 1040px;
   margin: 0 auto;
 }
 
@@ -54,12 +59,12 @@ header {
   align-items: center;
   border-bottom: 1px solid var(--border);
   padding-bottom: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   gap: 12px;
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -78,7 +83,7 @@ h1 {
   color: #e0f2fe;
   padding: 3px 8px;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
 }
 
@@ -100,15 +105,8 @@ h1 {
   transition: all 0.3s;
 }
 
-.status-pill.paused {
-  background: #451a03;
-  color: #fed7aa;
-}
-
-.status-pill.error {
-  background: #450a0a;
-  color: #fecaca;
-}
+.status-pill.paused { background: #451a03; color: #fed7aa; }
+.status-pill.error { background: #450a0a; color: #fecaca; }
 
 .dot {
   width: 8px;
@@ -117,16 +115,8 @@ h1 {
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
-
-.dot.paused {
-  background: var(--yellow);
-  animation: none;
-}
-
-.dot.error {
-  background: var(--red);
-  animation: none;
-}
+.dot.paused { background: var(--yellow); animation: none; }
+.dot.error { background: var(--red); animation: none; }
 
 @keyframes pulse {
   0% { opacity: 1; transform: scale(1); }
@@ -134,21 +124,216 @@ h1 {
   100% { opacity: 1; transform: scale(1); }
 }
 
+/* ==============================================================================
+   MAP CONTAINER & CONTROLS
+   ============================================================================== */
+.map-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.map-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: var(--subtext);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+#map {
+  width: 100%;
+  height: 320px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #111827;
+  z-index: 10;
+}
+
+/* Free OpenStreetMap Dark Mode Theme (No API Key Required) */
+#map.dark-mode-filtered .leaflet-tile-pane {
+  filter: brightness(0.65) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* Leaflet dark custom styling */
+.leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #38bdf8 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+}
+.leaflet-popup-tip {
+  background: #1e293b !important;
+}
+.popup-node-card {
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.popup-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.popup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+.popup-item {
+  background: #0f172a;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+}
+.popup-item span {
+  display: block;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+.popup-item strong {
+  font-size: 0.85rem;
+  color: #fff;
+}
+.btn-popup-select {
+  width: 100%;
+  background: #0284c7;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-popup-select:hover {
+  background: #0369a1;
+}
+
+/* Custom Marker Pin Animation */
+.marker-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0369a1;
+  color: #fff;
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.marker-pin.active {
+  background: #0284c7;
+  border: 3px solid #facc15;
+  box-shadow: 0 0 18px rgba(250, 204, 21, 0.8);
+  transform: scale(1.15);
+}
+
+/* ==============================================================================
+   NODE SWITCHER TAB BAR
+   ============================================================================== */
+.node-tabs-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.node-tab-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--subtext);
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.node-tab-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.node-tab-btn.active {
+  background: #0369a1;
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(3, 105, 161, 0.4);
+}
+
+.node-tab-btn .tab-badge {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  font-weight: 500;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .btn {
   background: #2563eb;
   color: #fff;
   border: none;
-  padding: 9px 14px;
+  padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
   text-decoration: none;
   display: inline-flex;
@@ -156,71 +341,53 @@ h1 {
   gap: 6px;
   transition: background 0.2s, transform 0.1s;
   user-select: none;
-  -webkit-tap-highlight-color: transparent;
 }
+.btn:active { transform: scale(0.98); }
+.btn:hover { background: #1d4ed8; }
+.btn-green { background: #059669; }
+.btn-green:hover { background: #047857; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { background: var(--card); }
+.btn-install { background: #7c3aed; display: none; }
+.btn-install:hover { background: #6d28d9; }
 
-.btn:active {
-  transform: scale(0.98);
-}
-
-.btn:hover {
-  background: #1d4ed8;
-}
-
-.btn-green {
-  background: #059669;
-}
-.btn-green:hover {
-  background: #047857;
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-.btn-outline:hover {
-  background: var(--card);
-}
-
-.btn-install {
-  background: #7c3aed;
-  display: none;
-}
-.btn-install:hover {
-  background: #6d28d9;
-}
-
+/* ==============================================================================
+   7-SENSOR METRIC CARDS GRID
+   ============================================================================== */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px;
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, border-color 0.2s;
+}
+.card:hover {
+  transform: translateY(-2px);
+  border-color: #475569;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 0.8rem;
   color: var(--subtext);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
 }
 
 .card-val {
-  font-size: 2.2rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #fff;
   margin-bottom: 4px;
@@ -228,15 +395,26 @@ h1 {
 }
 
 .card-unit {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--subtext);
   font-weight: 400;
-  margin-left: 2px;
+  margin-left: 3px;
 }
 
 .card-sub {
   font-size: 0.75rem;
   color: var(--subtext);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pill-badge {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .bar {
@@ -250,72 +428,106 @@ h1 {
 
 .bar-fill {
   height: 100%;
-  background: var(--accent);
   width: 0%;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 3px;
+  transition: width 0.5s ease-out;
 }
 
+/* Status Bar Info */
 .status-box {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
-  font-size: 0.85rem;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 0.82rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 24px;
+  gap: 16px;
   align-items: center;
 }
-
 .status-item {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
+/* Charts & Table */
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chart-toggle-group {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-chart {
+  background: #0f172a;
+  border: 1px solid var(--border);
+  color: var(--subtext);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-chart.active {
+  background: #0284c7;
+  color: #fff;
+  border-color: #38bdf8;
+}
+
+canvas#telemetryChart {
+  width: 100%;
+  height: 240px;
+  display: block;
+}
+
 .table-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-}
-
-.table-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  gap: 8px;
 }
 
 .table-responsive {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   text-align: left;
-  white-space: nowrap;
 }
 
 th {
   color: var(--subtext);
   border-bottom: 1px solid var(--border);
-  padding: 10px 12px;
+  padding: 9px 12px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 td {
-  border-bottom: 1px solid rgba(51, 65, 85, 0.6);
-  padding: 10px 12px;
+  border-bottom: 1px solid #1e293b;
+  padding: 9px 12px;
   color: #cbd5e1;
+  white-space: nowrap;
 }
 
 tr:hover td {
@@ -324,182 +536,218 @@ tr:hover td {
 
 /* Modal Dialog */
 .modal-overlay {
+  display: none;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  display: none;
+  z-index: 1000;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
   padding: 16px;
+  backdrop-filter: blur(4px);
 }
-
+.modal-overlay.open { display: flex; }
 .modal-content {
   background: #1e293b;
   border: 1px solid var(--border);
   border-radius: 14px;
+  padding: 22px;
+  max-width: 520px;
   width: 100%;
-  max-width: 480px;
-  padding: 20px 24px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-  animation: fadeIn 0.2s ease-out;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 12px;
   margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
 }
-
 .form-group {
   margin-bottom: 14px;
 }
-
 .form-group label {
   display: block;
   font-size: 0.8rem;
-  color: var(--subtext);
   font-weight: 600;
-  margin-bottom: 6px;
+  color: var(--subtext);
+  margin-bottom: 5px;
 }
-
 .form-input {
   width: 100%;
   background: #0f172a;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   color: #fff;
-  font-size: 0.88rem;
-  outline: none;
-  transition: border-color 0.2s;
+  font-size: 0.85rem;
 }
-
 .form-input:focus {
+  outline: none;
   border-color: var(--accent);
 }
-
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
 }
 
-/* Mobile specific styling */
 @media (max-width: 640px) {
-  body {
-    padding: 12px;
-  }
-  h1 {
-    font-size: 1.25rem;
-  }
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-  .card {
-    padding: 12px;
-  }
-  .card-val {
-    font-size: 1.75rem;
-  }
-  .actions {
-    gap: 8px;
-  }
-  .btn {
-    padding: 8px 10px;
-    font-size: 0.78rem;
-    flex: 1 1 calc(50% - 8px);
-    justify-content: center;
-  }
+  h1 { font-size: 1.25rem; }
+  .grid { grid-template-columns: 1fr 1fr; }
+  #map { height: 260px; }
+}
+@media (max-width: 440px) {
+  .grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
 
 <div class="container">
+  <!-- Header -->
   <header>
     <div>
       <h1>
-        <span>🌦️ Weather Station</span>
-        <span class="badge-group">
-          <span class="badge">ESP32-S3</span>
+        📡 LoRa Weather Station
+        <div class="badge-group">
+          <span class="badge">Multi-Node</span>
           <span class="badge badge-cloud">ThingSpeak Cloud</span>
-        </span>
+        </div>
       </h1>
       <p style="color:var(--subtext);font-size:0.8rem;margin-top:4px;">
-        Real-Time Cloud Telemetry & Microclimate Monitor
+        Real-time Microclimate Telemetry Network & Geographic Node Mapping
       </p>
     </div>
-    <div>
-      <span class="status-pill" id="statusPill">
-        <span class="dot" id="statusDot"></span>
-        <span id="statusText">Connecting...</span>
-      </span>
+    <div class="status-pill" id="statusPill">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Connecting...</span>
     </div>
   </header>
 
-  <div class="actions">
-    <button onclick="fetchData(true)" class="btn btn-outline" id="btnRefresh" title="Fetch latest data immediately">
-      🔄 Refresh Now
+  <!-- Interactive Map Section -->
+  <div class="map-card">
+    <div class="map-header">
+      <div class="map-title">
+        🗺️ Geographic Node Locations
+        <span style="font-size:0.75rem;color:var(--subtext);font-weight:normal;">(Click a station pin to view details)</span>
+      </div>
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#facc15;"></div> Active Selection</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#38bdf8;"></div> Field Station</div>
+      </div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <!-- Node Selector Tabs Bar -->
+  <div class="node-tabs-bar" id="nodeTabsBar">
+    <button class="node-tab-btn active" id="tabNode1" onclick="switchActiveNode(1)">
+      📍 Node 1 (Station North) <span class="tab-badge" id="badgeNode1">Syncing...</span>
     </button>
-    <button onclick="toggleAutoRefresh()" class="btn btn-outline" id="btnPause" title="Pause or resume auto sync">
-      ⏸️ Pause Sync
-    </button>
-    <button onclick="exportCSV()" class="btn btn-green" id="btnExport" title="Export historical telemetry to CSV">
-      📥 Download CSV
-    </button>
-    <button onclick="openSettingsModal()" class="btn btn-outline" id="btnSettings" title="Configure Channel ID and API Key">
-      ⚙️ Settings
-    </button>
-    <button onclick="installPWA()" class="btn btn-install" id="btnInstall" title="Install to Home Screen">
-      📱 Install App
+    <button class="node-tab-btn" id="tabNode2" onclick="switchActiveNode(2)">
+      📍 Node 2 (Station South) <span class="tab-badge" id="badgeNode2">Syncing...</span>
     </button>
   </div>
 
+  <!-- Global Action Toolbar -->
+  <div class="actions">
+    <button class="btn btn-outline" id="btnAuto" onclick="toggleAutoSync()">⏸️ Pause Auto-Sync</button>
+    <button class="btn btn-outline" onclick="syncActiveNode()">🔄 Sync Now</button>
+    <button class="btn btn-outline" onclick="openSettingsModal()">⚙️ Settings</button>
+    <button class="btn btn-install" id="btnInstall" onclick="promptInstall()">📱 Install App</button>
+  </div>
+
+  <!-- 7-Sensor Telemetry Grid for Selected Node -->
   <div class="grid">
+    <!-- 1. Temperature -->
     <div class="card">
-      <div class="card-header"><span>TEMPERATURE</span><span>🌡️</span></div>
+      <div class="card-header"><span>Temperature</span><span>🌡️</span></div>
       <div class="card-val"><span id="valTemp">--</span><span class="card-unit">°C</span></div>
-      <div class="card-sub">Air Temp (DHT11)</div>
+      <div class="card-sub">AM2301B Precision Sensor</div>
       <div class="bar"><div id="barTemp" class="bar-fill" style="background:var(--orange);"></div></div>
     </div>
 
+    <!-- 2. Relative Humidity -->
     <div class="card">
-      <div class="card-header"><span>HUMIDITY</span><span>💧</span></div>
+      <div class="card-header"><span>Relative Humidity</span><span>💧</span></div>
       <div class="card-val"><span id="valHum">--</span><span class="card-unit">%</span></div>
-      <div class="card-sub">Relative Humidity (DHT11)</div>
+      <div class="card-sub">AM2301B Relative Humidity</div>
       <div class="bar"><div id="barHum" class="bar-fill" style="background:var(--cyan);"></div></div>
     </div>
 
+    <!-- 3. Ambient Light -->
     <div class="card">
-      <div class="card-header"><span>AMBIENT LIGHT</span><span>☀️</span></div>
+      <div class="card-header"><span>Ambient Light</span><span>☀️</span></div>
       <div class="card-val"><span id="valLux">--</span><span class="card-unit">Lux</span></div>
-      <div class="card-sub">Calibrated Illuminance (BH1750)</div>
+      <div class="card-sub">BH1750 Calibrated ALS</div>
       <div class="bar"><div id="barLux" class="bar-fill" style="background:var(--yellow);"></div></div>
     </div>
 
+    <!-- 4. Soil Moisture -->
     <div class="card">
-      <div class="card-header"><span>SOIL MOISTURE</span><span>🌱</span></div>
+      <div class="card-header"><span>Soil Moisture</span><span>🌱</span></div>
       <div class="card-val"><span id="valSoil">--</span><span class="card-unit">%</span></div>
-      <div class="card-sub" id="subSoil">Substrate Saturation</div>
+      <div class="card-sub">Calibrated Analog Probe</div>
       <div class="bar"><div id="barSoil" class="bar-fill" style="background:var(--green);"></div></div>
+    </div>
+
+    <!-- 5. UV Index -->
+    <div class="card">
+      <div class="card-header"><span>UV Index</span><span>🟣</span></div>
+      <div class="card-val"><span id="valUvi">--</span><span class="card-unit">UVI</span></div>
+      <div class="card-sub">
+        <span>LTR390 UV Sensor</span>
+        <span id="badgeUvi" class="pill-badge" style="background:#475569;color:#fff;">--</span>
+      </div>
+      <div class="bar"><div id="barUvi" class="bar-fill" style="background:var(--purple);"></div></div>
+    </div>
+
+    <!-- 6. PM2.5 Dust -->
+    <div class="card">
+      <div class="card-header"><span>PM2.5 Dust</span><span>💨</span></div>
+      <div class="card-val"><span id="valPm25">--</span><span class="card-unit">µg/m³</span></div>
+      <div class="card-sub">
+        <span>Laser PM (APM10)</span>
+        <span id="badgePm25" class="pill-badge" style="background:#475569;color:#fff;">--</span>
+      </div>
+      <div class="bar"><div id="barPm25" class="bar-fill" style="background:#ef4444;"></div></div>
+    </div>
+
+    <!-- 7. PM10 Dust -->
+    <div class="card">
+      <div class="card-header"><span>PM10 Coarse</span><span>🌫️</span></div>
+      <div class="card-val"><span id="valPm10">--</span><span class="card-unit">µg/m³</span></div>
+      <div class="card-sub">Laser Coarse (APM10)</div>
+      <div class="bar"><div id="barPm10" class="bar-fill" style="background:#f43f5e;"></div></div>
+    </div>
+
+    <!-- 8. Link & Location Info -->
+    <div class="card">
+      <div class="card-header"><span>Station Location</span><span>📍</span></div>
+      <div class="card-val" style="font-size:1.15rem;margin-top:6px;line-height:1.3;">
+        <span id="valCoords">--</span>
+      </div>
+      <div class="card-sub" style="margin-top:8px;">
+        <span id="valLocationName">Active Node</span>
+      </div>
+      <div class="bar"><div class="bar-fill" style="width:100%;background:var(--indigo);"></div></div>
     </div>
   </div>
 
+  <!-- Status Summary Box -->
   <div class="status-box">
     <div class="status-item">
-      🕒 <strong>Latest Reading:</strong> <span id="valTime" style="color:var(--accent);">--</span>
+      🏷️ <strong>Active Station:</strong> <span id="lblActiveStation" style="color:var(--accent);">Node 1</span>
+    </div>
+    <div class="status-item">
+      🕒 <strong>Latest Reading:</strong> <span id="valTime" style="color:#f8fafc;">--</span>
     </div>
     <div class="status-item">
       ☁️ <strong>Channel:</strong> <span id="valChannel" style="color:#a78bfa;">3543024</span>
@@ -512,9 +760,24 @@ tr:hover td {
     </div>
   </div>
 
+  <!-- Telemetry Historical Trends Chart -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <h3 style="font-size:0.95rem;color:#f1f5f9;">📈 Historical Telemetry Trends (Recent Entries)</h3>
+      <div class="chart-toggle-group">
+        <button class="btn-chart active" id="btnChartTemp" onclick="toggleChartMetric('temp')">🌡️ Temp</button>
+        <button class="btn-chart active" id="btnChartHum" onclick="toggleChartMetric('hum')">💧 Humidity</button>
+        <button class="btn-chart active" id="btnChartLux" onclick="toggleChartMetric('lux')">☀️ Lux</button>
+        <button class="btn-chart active" id="btnChartPm25" onclick="toggleChartMetric('pm25')">💨 PM2.5</button>
+      </div>
+    </div>
+    <canvas id="telemetryChart"></canvas>
+  </div>
+
+  <!-- Telemetry Historical Data Table -->
   <div class="table-card">
-    <div class="table-header">
-      <h3 style="font-size:1rem;color:#f1f5f9;">Recent Telemetry History</h3>
+    <div class="table-header" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+      <h3 style="font-size:0.95rem;color:#f1f5f9;">📋 Telemetry Log History (<span id="lblTableNode">Node 1</span>)</h3>
       <span style="font-size:0.75rem;color:var(--subtext);" id="tableCount">Showing last 30 readings</span>
     </div>
     <div class="table-responsive">
@@ -526,12 +789,15 @@ tr:hover td {
             <th>Temp (°C)</th>
             <th>Humidity (%)</th>
             <th>Light (Lux)</th>
-            <th>Soil Moisture (%)</th>
+            <th>Soil (%)</th>
+            <th>UVI</th>
+            <th>PM2.5</th>
+            <th>PM10</th>
           </tr>
         </thead>
         <tbody id="tableBody">
           <tr>
-            <td colspan="6" style="text-align:center;padding:24px;color:var(--subtext);">
+            <td colspan="9" style="text-align:center;padding:24px;color:var(--subtext);">
               Connecting to ThingSpeak Cloud...
             </td>
           </tr>
@@ -546,27 +812,82 @@ tr:hover td {
   <div class="modal-content">
     <div class="modal-header">
       <h3 style="color:#f8fafc;font-size:1.1rem;display:flex;align-items:center;gap:6px;">
-        ⚙️ Dashboard Settings
+        ⚙️ Multi-Node & Dashboard Settings
       </h3>
       <button onclick="closeSettingsModal()" style="background:transparent;border:none;color:var(--subtext);font-size:1.4rem;cursor:pointer;">&times;</button>
     </div>
+
+    <!-- Node 1 Settings -->
+    <h4 style="color:#38bdf8;font-size:0.85rem;margin-bottom:8px;text-transform:uppercase;">📍 Node 1 Configuration</h4>
     <div class="form-group">
-      <label for="cfgChannelId">ThingSpeak Channel ID</label>
-      <input type="text" id="cfgChannelId" class="form-input" placeholder="e.g. 3543024">
+      <label for="cfgN1Name">Node 1 Label</label>
+      <input type="text" id="cfgN1Name" class="form-input">
     </div>
     <div class="form-group">
-      <label for="cfgReadKey">Read API Key</label>
-      <input type="text" id="cfgReadKey" class="form-input" placeholder="e.g. WK8Z6FH8W8UTJS7Q">
+      <label for="cfgN1Channel">ThingSpeak Channel ID</label>
+      <input type="text" id="cfgN1Channel" class="form-input">
     </div>
+    <div class="form-group">
+      <label for="cfgN1Key">Read API Key</label>
+      <input type="text" id="cfgN1Key" class="form-input">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="form-group">
+        <label for="cfgN1Lat">Latitude</label>
+        <input type="text" id="cfgN1Lat" class="form-input">
+      </div>
+      <div class="form-group">
+        <label for="cfgN1Lon">Longitude</label>
+        <input type="text" id="cfgN1Lon" class="form-input">
+      </div>
+    </div>
+
+    <!-- Node 2 Settings -->
+    <h4 style="color:#a78bfa;font-size:0.85rem;margin-top:14px;margin-bottom:8px;text-transform:uppercase;">📍 Node 2 Configuration</h4>
+    <div class="form-group">
+      <label for="cfgN2Name">Node 2 Label</label>
+      <input type="text" id="cfgN2Name" class="form-input">
+    </div>
+    <div class="form-group">
+      <label for="cfgN2Channel">ThingSpeak Channel ID</label>
+      <input type="text" id="cfgN2Channel" class="form-input">
+    </div>
+    <div class="form-group">
+      <label for="cfgN2Key">Read API Key</label>
+      <input type="text" id="cfgN2Key" class="form-input">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="form-group">
+        <label for="cfgN2Lat">Latitude</label>
+        <input type="text" id="cfgN2Lat" class="form-input">
+      </div>
+      <div class="form-group">
+        <label for="cfgN2Lon">Longitude</label>
+        <input type="text" id="cfgN2Lon" class="form-input">
+      </div>
+    </div>
+
+    <!-- Global Sync Settings -->
+    <h4 style="color:#22c55e;font-size:0.85rem;margin-top:14px;margin-bottom:8px;text-transform:uppercase;">⏱️ Global Sync Settings</h4>
     <div class="form-group">
       <label for="cfgInterval">Auto-Sync Interval (seconds)</label>
-      <input type="number" id="cfgInterval" class="form-input" min="15" max="300" placeholder="20 (min 15)">
-      <span style="font-size:0.7rem;color:var(--subtext);">ThingSpeak free tier enforces a minimum of 15 seconds.</span>
+      <input type="number" id="cfgInterval" class="form-input" min="15" max="300">
     </div>
     <div class="form-group">
       <label for="cfgResults">Feeds to Retrieve</label>
-      <input type="number" id="cfgResults" class="form-input" min="5" max="100" placeholder="30">
+      <input type="number" id="cfgResults" class="form-input" min="5" max="100">
     </div>
+
+    <!-- Map API Key (Optional) -->
+    <h4 style="color:#facc15;font-size:0.85rem;margin-top:14px;margin-bottom:8px;text-transform:uppercase;">🗺️ Map Basemap & API Key</h4>
+    <div class="form-group">
+      <label for="cfgCartoKey">CARTO API Key (Optional)</label>
+      <input type="text" id="cfgCartoKey" class="form-input" placeholder="Leave empty for 100% Free OpenStreetMap (No API key needed)">
+      <span style="font-size:0.7rem;color:var(--subtext);margin-top:4px;display:block;">
+        By default, the dashboard uses <strong>OpenStreetMap with Dark Theme</strong>, which is 100% free and requires <strong>zero API keys</strong>. If you have a CARTO account key, paste it above to use native CARTO Dark Matter tiles.
+      </span>
+    </div>
+
     <div class="modal-actions">
       <button onclick="resetSettingsDefaults()" class="btn btn-outline" style="margin-right:auto;">Reset Defaults</button>
       <button onclick="closeSettingsModal()" class="btn btn-outline">Cancel</button>
@@ -576,319 +897,638 @@ tr:hover td {
 </div>
 
 <script>
-// Default configuration
-const DEFAULT_CONFIG = {
-  channelId: '3543024',
-  readKey: 'WK8Z6FH8W8UTJS7Q',
-  intervalSec: 20,
-  resultsCount: 30
+// ==============================================================================
+// CONFIGURATION & STATE MANAGEMENT
+// ==============================================================================
+const DEFAULT_NODES = {
+  1: {
+    id: 1,
+    name: "Node 1 (Station North)",
+    channelId: "3543024",
+    readKey: "WK8Z6FH8W8UTJS7Q",
+    lat: 10.841168077294883,
+    lon: 106.80988926666828
+  },
+  2: {
+    id: 2,
+    name: "Node 2 (Station South)",
+    channelId: "3558474",
+    readKey: "6Y885RXM1MREEGV1",
+    lat: 10.840083260390088,
+    lon: 106.81139950400448
+  },
+  cartoApiKey: "cb1_4xx0_1_cd11d006961464e31ddff4b1"
 };
 
-let currentConfig = { ...DEFAULT_CONFIG };
-let autoRefresh = true;
-let countdownTimer = null;
-let secondsUntilNextSync = 20;
-let feedsData = [];
-let deferredInstallPrompt = null;
+let nodesConfig = JSON.parse(JSON.stringify(DEFAULT_NODES));
+let globalIntervalSec = 20;
+let globalResultsCount = 30;
 
-// Load stored settings from localStorage if available
-function loadSettings() {
+let activeNodeId = 1;
+let autoSync = true;
+let countdownTimer = null;
+let secondsRemaining = 20;
+
+// Cached Feeds per Node
+let nodeFeeds = { 1: [], 2: [] };
+let nodeLatest = { 1: null, 2: null };
+
+// Leaflet Map & Markers
+let mapInstance = null;
+let currentTileLayer = null;
+let mapMarkers = {};
+
+// Chart Metric Visibility
+let chartMetrics = { temp: true, hum: true, lux: true, pm25: true };
+
+// ==============================================================================
+// INITIALIZATION
+// ==============================================================================
+function initApp() {
+  loadStoredSettings();
+  initMap();
+  syncAllNodes();
+  startCountdown();
+  setupPWA();
+}
+
+function loadStoredSettings() {
   try {
-    const saved = localStorage.getItem('weather_station_cfg');
+    const saved = localStorage.getItem('weather_station_multinode_cfg');
     if (saved) {
       const parsed = JSON.parse(saved);
-      currentConfig.channelId = parsed.channelId || DEFAULT_CONFIG.channelId;
-      currentConfig.readKey = parsed.readKey || DEFAULT_CONFIG.readKey;
-      currentConfig.intervalSec = parseInt(parsed.intervalSec, 10) || DEFAULT_CONFIG.intervalSec;
-      currentConfig.resultsCount = parseInt(parsed.resultsCount, 10) || DEFAULT_CONFIG.resultsCount;
+      if (parsed.nodes) nodesConfig = parsed.nodes;
+      if (parsed.intervalSec) globalIntervalSec = parsed.intervalSec;
+      if (parsed.resultsCount) globalResultsCount = parsed.resultsCount;
     }
   } catch (e) {
-    console.warn('Failed to load localStorage configuration:', e);
+    console.warn("Could not load stored settings:", e);
+  }
+  // Ensure active CARTO API key is populated
+  if (!nodesConfig.cartoApiKey) {
+    nodesConfig.cartoApiKey = DEFAULT_NODES.cartoApiKey;
   }
 }
 
-function saveSettings() {
-  const ch = document.getElementById('cfgChannelId').value.trim();
-  const key = document.getElementById('cfgReadKey').value.trim();
-  const interval = parseInt(document.getElementById('cfgInterval').value, 10);
-  const results = parseInt(document.getElementById('cfgResults').value, 10);
-
-  if (!ch) {
-    alert('Please enter a valid Channel ID.');
-    return;
-  }
-  if (!key) {
-    alert('Please enter a Read API Key.');
-    return;
-  }
-
-  currentConfig.channelId = ch;
-  currentConfig.readKey = key;
-  currentConfig.intervalSec = Math.max(15, interval || 20);
-  currentConfig.resultsCount = Math.max(5, Math.min(100, results || 30));
-
+function saveSettingsToStorage() {
   try {
-    localStorage.setItem('weather_station_cfg', JSON.stringify(currentConfig));
+    const payload = {
+      nodes: nodesConfig,
+      intervalSec: globalIntervalSec,
+      resultsCount: globalResultsCount
+    };
+    localStorage.setItem('weather_station_multinode_cfg', JSON.stringify(payload));
   } catch (e) {}
-
-  closeSettingsModal();
-  secondsUntilNextSync = currentConfig.intervalSec;
-  fetchData(true);
 }
 
-function resetSettingsDefaults() {
-  document.getElementById('cfgChannelId').value = DEFAULT_CONFIG.channelId;
-  document.getElementById('cfgReadKey').value = DEFAULT_CONFIG.readKey;
-  document.getElementById('cfgInterval').value = DEFAULT_CONFIG.intervalSec;
-  document.getElementById('cfgResults').value = DEFAULT_CONFIG.resultsCount;
-}
+// ==============================================================================
+// LEAFLET MAP INITIALIZATION & TILE LAYERS
+// ==============================================================================
+function applyTileLayer() {
+  if (!mapInstance) return;
+  if (currentTileLayer) {
+    mapInstance.removeLayer(currentTileLayer);
+  }
 
-function openSettingsModal() {
-  document.getElementById('cfgChannelId').value = currentConfig.channelId;
-  document.getElementById('cfgReadKey').value = currentConfig.readKey;
-  document.getElementById('cfgInterval').value = currentConfig.intervalSec;
-  document.getElementById('cfgResults').value = currentConfig.resultsCount;
-  document.getElementById('settingsModal').style.display = 'flex';
-}
+  const mapEl = document.getElementById('map');
+  const cartoKey = nodesConfig.cartoApiKey || DEFAULT_NODES.cartoApiKey;
 
-function closeSettingsModal() {
-  document.getElementById('settingsModal').style.display = 'none';
-}
-
-function handleModalOverlayClick(e) {
-  if (e.target.id === 'settingsModal') {
-    closeSettingsModal();
+  if (cartoKey) {
+    // Official CARTO Dark Matter with ?key= query parameter (CARTO requirement)
+    mapEl.classList.remove('dark-mode-filtered');
+    currentTileLayer = L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${encodeURIComponent(cartoKey)}`, {
+      subdomains: 'abcd',
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }).addTo(mapInstance);
+  } else {
+    // 100% Free OpenStreetMap with CSS Dark Theme (ZERO API KEY REQUIRED!)
+    mapEl.classList.add('dark-mode-filtered');
+    currentTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(mapInstance);
   }
 }
 
-// Format UTC ISO date to clean readable local timestamp
-function formatLocalDate(isoStr) {
-  if (!isoStr) return '--';
+function initMap() {
+  if (typeof L === 'undefined') return;
+
+  // Center between Node 1 and Node 2
+  const centerLat = (nodesConfig[1].lat + nodesConfig[2].lat) / 2;
+  const centerLon = (nodesConfig[1].lon + nodesConfig[2].lon) / 2;
+
+  mapInstance = L.map('map', {
+    zoomControl: true,
+    attributionControl: false
+  }).setView([centerLat, centerLon], 16);
+
+  applyTileLayer();
+
+  // Create custom markers for each node
+  for (let nid in nodesConfig) {
+    if (nid === 'cartoApiKey') continue;
+    createNodeMarker(Number(nid));
+  }
+}
+
+function createNodeMarker(nid) {
+  const node = nodesConfig[nid];
+  const isActive = nid === activeNodeId;
+
+  const icon = L.divIcon({
+    className: 'custom-div-icon',
+    html: `<div class="marker-pin ${isActive ? 'active' : ''}" id="markerPin${nid}">N${nid}</div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -20]
+  });
+
+  const marker = L.marker([node.lat, node.lon], { icon: icon }).addTo(mapInstance);
+  marker.bindPopup(buildPopupHtml(nid));
+  marker.on('click', () => {
+    switchActiveNode(nid);
+  });
+
+  mapMarkers[nid] = marker;
+}
+
+function buildPopupHtml(nid) {
+  const node = nodesConfig[nid];
+  const d = nodeLatest[nid] || {};
+  return `
+    <div class="popup-node-card">
+      <div class="popup-title">📍 ${node.name}</div>
+      <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">
+        Last Sync: ${d.created_at ? formatTime(d.created_at) : 'Waiting for telemetry...'}
+      </div>
+      <div class="popup-grid">
+        <div class="popup-item"><span>Temp</span><strong>${d.field1 !== undefined && d.field1 !== null ? Number(d.field1).toFixed(1) + '°C' : '--'}</strong></div>
+        <div class="popup-item"><span>Humidity</span><strong>${d.field2 !== undefined && d.field2 !== null ? Number(d.field2).toFixed(0) + '%' : '--'}</strong></div>
+        <div class="popup-item"><span>Light</span><strong>${d.field3 !== undefined && d.field3 !== null ? Number(d.field3).toFixed(0) + ' lx' : '--'}</strong></div>
+        <div class="popup-item"><span>Soil</span><strong>${d.field4 !== undefined && d.field4 !== null ? Number(d.field4).toFixed(0) + '%' : '--'}</strong></div>
+        <div class="popup-item"><span>UVI</span><strong>${d.field5 !== undefined && d.field5 !== null ? Number(d.field5).toFixed(1) : '--'}</strong></div>
+        <div class="popup-item"><span>PM2.5</span><strong>${d.field6 !== undefined && d.field6 !== null ? d.field6 + ' µg' : '--'}</strong></div>
+      </div>
+      <button class="btn-popup-select" onclick="switchActiveNode(${nid})">Select This Station</button>
+    </div>
+  `;
+}
+
+function updateMapMarkerPopups() {
+  for (let nid in mapMarkers) {
+    const pin = document.getElementById('markerPin' + nid);
+    if (pin) {
+      if (Number(nid) === activeNodeId) pin.classList.add('active');
+      else pin.classList.remove('active');
+    }
+    mapMarkers[nid].setPopupContent(buildPopupHtml(Number(nid)));
+  }
+}
+
+// ==============================================================================
+// NODE SWITCHING & DATA RENDERING
+// ==============================================================================
+function switchActiveNode(nid) {
+  activeNodeId = nid;
+
+  // Update tabs UI
+  document.querySelectorAll('.node-tab-btn').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.getElementById('tabNode' + nid);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  // Update Map Pin Highlight and Pan smoothly
+  if (mapInstance && nodesConfig[nid]) {
+    mapInstance.panTo([nodesConfig[nid].lat, nodesConfig[nid].lon], { animate: true, duration: 0.6 });
+  }
+  updateMapMarkerPopups();
+
+  // Render Telemetry
+  renderActiveNodeTelemetry();
+  drawTelemetryChart();
+}
+
+function renderActiveNodeTelemetry() {
+  const node = nodesConfig[activeNodeId];
+  const d = nodeLatest[activeNodeId] || {};
+
+  document.getElementById('lblActiveStation').innerText = node.name;
+  document.getElementById('lblTableNode').innerText = node.name;
+  document.getElementById('valChannel').innerText = node.channelId;
+  document.getElementById('valCoords').innerText = `${node.lat.toFixed(6)}, ${node.lon.toFixed(6)}`;
+  document.getElementById('valLocationName').innerText = `${node.name}`;
+
+  // Fields Mapping:
+  // field1: temp, field2: hum, field3: lux, field4: soil, field5: uvi, field6: pm2.5, field7: pm10
+  const temp = parseVal(d.field1);
+  const hum = parseVal(d.field2);
+  const lux = parseVal(d.field3);
+  const soil = parseVal(d.field4);
+  const uvi = parseVal(d.field5);
+  const pm25 = parseVal(d.field6);
+  const pm10 = parseVal(d.field7);
+
+  document.getElementById('valTemp').innerText = temp !== null ? temp.toFixed(1) : '--';
+  document.getElementById('valHum').innerText = hum !== null ? hum.toFixed(0) : '--';
+  document.getElementById('valLux').innerText = lux !== null ? lux.toFixed(0) : '--';
+  document.getElementById('valSoil').innerText = soil !== null ? soil.toFixed(1) : '--';
+  document.getElementById('valUvi').innerText = uvi !== null ? uvi.toFixed(2) : '--';
+  document.getElementById('valPm25').innerText = pm25 !== null ? Math.round(pm25) : '--';
+  document.getElementById('valPm10').innerText = pm10 !== null ? Math.round(pm10) : '--';
+
+  document.getElementById('valTime').innerText = d.created_at ? formatTime(d.created_at) : 'Waiting for data...';
+  document.getElementById('valEntry').innerText = d.entry_id ? `#${d.entry_id}` : '#0';
+
+  // Fill Bars
+  document.getElementById('barTemp').style.width = Math.min(100, Math.max(0, ((temp || 0) / 50) * 100)) + '%';
+  document.getElementById('barHum').style.width = Math.min(100, Math.max(0, (hum || 0))) + '%';
+  document.getElementById('barLux').style.width = Math.min(100, Math.max(0, ((lux || 0) / 2000) * 100)) + '%';
+  document.getElementById('barSoil').style.width = Math.min(100, Math.max(0, (soil || 0))) + '%';
+  document.getElementById('barUvi').style.width = Math.min(100, Math.max(0, ((uvi || 0) / 12) * 100)) + '%';
+  document.getElementById('barPm25').style.width = Math.min(100, Math.max(0, ((pm25 || 0) / 150) * 100)) + '%';
+  document.getElementById('barPm10').style.width = Math.min(100, Math.max(0, ((pm10 || 0) / 250) * 100)) + '%';
+
+  // UVI Severity Badge
+  const badgeUvi = document.getElementById('badgeUvi');
+  if (uvi === null) {
+    badgeUvi.innerText = '--';
+    badgeUvi.style.background = '#475569';
+  } else if (uvi <= 2.9) {
+    badgeUvi.innerText = 'Low';
+    badgeUvi.style.background = '#22c55e';
+  } else if (uvi <= 5.9) {
+    badgeUvi.innerText = 'Moderate';
+    badgeUvi.style.background = '#eab308';
+  } else if (uvi <= 7.9) {
+    badgeUvi.innerText = 'High';
+    badgeUvi.style.background = '#f97316';
+  } else if (uvi <= 10.9) {
+    badgeUvi.innerText = 'Very High';
+    badgeUvi.style.background = '#ef4444';
+  } else {
+    badgeUvi.innerText = 'Extreme';
+    badgeUvi.style.background = '#a855f7';
+  }
+
+  // PM2.5 AQI Category Badge
+  const badgePm25 = document.getElementById('badgePm25');
+  if (pm25 === null) {
+    badgePm25.innerText = '--';
+    badgePm25.style.background = '#475569';
+  } else if (pm25 <= 12.0) {
+    badgePm25.innerText = 'Good';
+    badgePm25.style.background = '#22c55e';
+  } else if (pm25 <= 35.4) {
+    badgePm25.innerText = 'Moderate';
+    badgePm25.style.background = '#eab308';
+  } else if (pm25 <= 55.4) {
+    badgePm25.innerText = 'Sensitive';
+    badgePm25.style.background = '#f97316';
+  } else {
+    badgePm25.innerText = 'Unhealthy';
+    badgePm25.style.background = '#ef4444';
+  }
+
+  // Render Table History
+  renderTableHistory();
+}
+
+function parseVal(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+
+function formatTime(isoStr) {
   try {
     const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return isoStr;
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const mins = String(d.getMinutes()).padStart(2, '0');
-    const secs = String(d.getSeconds()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hours}:${mins}:${secs}`;
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
+           ' (' + d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ')';
   } catch (e) {
     return isoStr;
   }
 }
 
-// Fetch telemetry feeds from ThingSpeak Cloud REST API
-async function fetchData(manual = false) {
-  const pill = document.getElementById('statusPill');
-  const dot = document.getElementById('statusDot');
-  const txt = document.getElementById('statusText');
+// ==============================================================================
+// THINGSPEAK CLOUD SYNCHRONIZATION
+// ==============================================================================
+async function fetchNodeChannel(nid) {
+  const node = nodesConfig[nid];
+  if (!node || !node.channelId) return null;
 
-  if (manual) {
-    txt.innerText = 'Syncing...';
-  }
-
-  const url = `https://api.thingspeak.com/channels/${currentConfig.channelId}/feeds.json?api_key=${currentConfig.readKey}&results=${currentConfig.resultsCount}`;
-
+  const url = `https://api.thingspeak.com/channels/${node.channelId}/feeds.json?api_key=${node.readKey}&results=${globalResultsCount}`;
   try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
-
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (!data || !data.feeds) {
-      throw new Error('Malformed feed response');
+    const feeds = data.feeds || [];
+    nodeFeeds[nid] = feeds;
+    if (feeds.length > 0) {
+      nodeLatest[nid] = feeds[feeds.length - 1];
     }
-
-    feedsData = data.feeds;
-    const channel = data.channel || {};
-
-    // Update Channel metadata
-    document.getElementById('valChannel').innerText = `${channel.name || 'LoRa Weather'} (#${currentConfig.channelId})`;
-    document.getElementById('valEntry').innerText = `#${channel.last_entry_id || (feedsData.length ? feedsData[feedsData.length - 1].entry_id : 0)}`;
-
-    if (feedsData.length > 0) {
-      const latest = feedsData[feedsData.length - 1];
-      const temp = parseFloat(latest.field1);
-      const hum = parseFloat(latest.field2);
-      const lux = parseFloat(latest.field3);
-      const soil = parseFloat(latest.field4);
-
-      // Temperature
-      document.getElementById('valTemp').innerText = isNaN(temp) ? '--' : temp.toFixed(1);
-      document.getElementById('barTemp').style.width = isNaN(temp) ? '0%' : Math.min(100, Math.max(0, (temp / 50) * 100)) + '%';
-
-      // Humidity
-      document.getElementById('valHum').innerText = isNaN(hum) ? '--' : Math.round(hum);
-      document.getElementById('barHum').style.width = isNaN(hum) ? '0%' : Math.min(100, Math.max(0, hum)) + '%';
-
-      // Ambient Light
-      document.getElementById('valLux').innerText = isNaN(lux) ? '--' : Math.round(lux);
-      document.getElementById('barLux').style.width = isNaN(lux) ? '0%' : Math.min(100, Math.max(0, (lux / 2000) * 100)) + '%';
-
-      // Soil Moisture
-      document.getElementById('valSoil').innerText = isNaN(soil) ? '--' : soil.toFixed(1);
-      document.getElementById('barSoil').style.width = isNaN(soil) ? '0%' : Math.min(100, Math.max(0, soil)) + '%';
-
-      // Timestamp
-      document.getElementById('valTime').innerText = formatLocalDate(latest.created_at);
-    }
-
-    // Render Table
-    renderTable(feedsData);
-
-    // Update pill status
-    pill.className = 'status-pill' + (autoRefresh ? '' : ' paused');
-    dot.className = 'dot' + (autoRefresh ? '' : ' paused');
-    txt.innerText = autoRefresh ? 'Live Cloud Sync' : 'Sync Paused';
-    secondsUntilNextSync = currentConfig.intervalSec;
-
-  } catch (err) {
-    console.error('ThingSpeak sync error:', err);
-    pill.className = 'status-pill error';
-    dot.className = 'dot error';
-    txt.innerText = 'Sync Error';
+    return feeds;
+  } catch (e) {
+    console.warn(`Error fetching Node #${nid} channel:`, e);
+    return null;
   }
 }
 
-// Render historical telemetry table (reverse order: latest on top)
-function renderTable(feeds) {
-  const tbody = document.getElementById('tableBody');
-  const countLabel = document.getElementById('tableCount');
+async function syncAllNodes() {
+  updateStatus("Syncing...", "sync");
 
-  if (!feeds || feeds.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--subtext);">No telemetry feeds found.</td></tr>';
-    countLabel.innerText = '0 readings';
-    return;
-  }
+  const p1 = fetchNodeChannel(1);
+  const p2 = fetchNodeChannel(2);
+  await Promise.all([p1, p2]);
 
-  countLabel.innerText = `Showing last ${feeds.length} readings`;
+  // Update Tab Badges
+  const b1 = document.getElementById('badgeNode1');
+  const b2 = document.getElementById('badgeNode2');
+  if (b1) b1.innerText = nodeLatest[1] ? 'Online' : 'Offline';
+  if (b2) b2.innerText = nodeLatest[2] ? 'Online' : 'Offline';
 
-  let rowsHtml = '';
-  for (let i = feeds.length - 1; i >= 0; i--) {
-    const f = feeds[i];
-    const t = parseFloat(f.field1);
-    const h = parseFloat(f.field2);
-    const l = parseFloat(f.field3);
-    const s = parseFloat(f.field4);
-
-    rowsHtml += `<tr>
-      <td><strong>#${f.entry_id}</strong></td>
-      <td>${formatLocalDate(f.created_at)}</td>
-      <td style="color:#fdba74;"><strong>${isNaN(t) ? '--' : t.toFixed(1)}</strong></td>
-      <td style="color:#67e8f9;">${isNaN(h) ? '--' : Math.round(h)}%</td>
-      <td style="color:#fde047;">${isNaN(l) ? '--' : Math.round(l)}</td>
-      <td style="color:#86efac;">${isNaN(s) ? '--' : s.toFixed(1)}%</td>
-    </tr>`;
-  }
-  tbody.innerHTML = rowsHtml;
+  updateStatus("Online (Synced)", "ok");
+  updateMapMarkerPopups();
+  renderActiveNodeTelemetry();
+  drawTelemetryChart();
 }
 
-// Export fetched data to CSV
-function exportCSV() {
-  if (!feedsData || feedsData.length === 0) {
-    alert('No telemetry data available to export.');
-    return;
-  }
-
-  let csvContent = "Entry_ID,Timestamp_UTC,Timestamp_Local,Temperature_C,Humidity_Pct,Light_Lux,Soil_Moisture_Pct\r\n";
-  feedsData.forEach(f => {
-    const localTime = formatLocalDate(f.created_at);
-    csvContent += `${f.entry_id},"${f.created_at}","${localTime}",${f.field1 || ''},${f.field2 || ''},${f.field3 || ''},${f.field4 || ''}\r\n`;
-  });
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.setAttribute('href', url);
-  a.setAttribute('download', `weather_station_${currentConfig.channelId}_${Date.now()}.csv`);
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+async function syncActiveNode() {
+  updateStatus("Syncing...", "sync");
+  await fetchNodeChannel(activeNodeId);
+  updateStatus("Online (Synced)", "ok");
+  updateMapMarkerPopups();
+  renderActiveNodeTelemetry();
+  drawTelemetryChart();
 }
 
-// Auto-refresh countdown management
-function toggleAutoRefresh() {
-  autoRefresh = !autoRefresh;
-  const btn = document.getElementById('btnPause');
+function updateStatus(text, state) {
   const pill = document.getElementById('statusPill');
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
 
-  if (autoRefresh) {
-    btn.innerHTML = '⏸️ Pause Sync';
-    pill.className = 'status-pill';
-    dot.className = 'dot';
-    txt.innerText = 'Live Cloud Sync';
-    secondsUntilNextSync = currentConfig.intervalSec;
-  } else {
-    btn.innerHTML = '▶️ Resume Sync';
-    pill.className = 'status-pill paused';
-    dot.className = 'dot paused';
-    txt.innerText = 'Sync Paused';
-    document.getElementById('valCountdown').innerText = 'Paused';
+  txt.innerText = text;
+  pill.className = "status-pill";
+  dot.className = "dot";
+
+  if (state === "pause") {
+    pill.classList.add("paused");
+    dot.classList.add("paused");
+  } else if (state === "error") {
+    pill.classList.add("error");
+    dot.classList.add("error");
   }
 }
 
 function startCountdown() {
+  secondsRemaining = globalIntervalSec;
   if (countdownTimer) clearInterval(countdownTimer);
-  countdownTimer = setInterval(() => {
-    if (!autoRefresh) return;
 
-    secondsUntilNextSync--;
-    if (secondsUntilNextSync <= 0) {
-      secondsUntilNextSync = currentConfig.intervalSec;
-      fetchData();
-    } else {
-      document.getElementById('valCountdown').innerText = `${secondsUntilNextSync}s`;
+  countdownTimer = setInterval(() => {
+    if (autoSync) {
+      secondsRemaining--;
+      if (secondsRemaining <= 0) {
+        secondsRemaining = globalIntervalSec;
+        syncAllNodes();
+      }
+      document.getElementById('valCountdown').innerText = `${secondsRemaining}s`;
     }
   }, 1000);
 }
 
-// Progressive Web App installation support
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  const installBtn = document.getElementById('btnInstall');
-  if (installBtn) {
-    installBtn.style.display = 'inline-flex';
+function toggleAutoSync() {
+  autoSync = !autoSync;
+  const btn = document.getElementById('btnAuto');
+  if (autoSync) {
+    btn.innerText = "⏸️ Pause Auto-Sync";
+    updateStatus("Online (Synced)", "ok");
+  } else {
+    btn.innerText = "▶️ Resume Auto-Sync";
+    updateStatus("Auto-Sync Paused", "pause");
   }
-});
+}
 
-function installPWA() {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  deferredInstallPrompt.userChoice.then((choiceResult) => {
-    if (choiceResult.outcome === 'accepted') {
-      const installBtn = document.getElementById('btnInstall');
-      if (installBtn) installBtn.style.display = 'none';
-    }
-    deferredInstallPrompt = null;
+// ==============================================================================
+// TABLE HISTORY
+// ==============================================================================
+function renderTableHistory() {
+  const feeds = nodeFeeds[activeNodeId] || [];
+  const tbody = document.getElementById('tableBody');
+  document.getElementById('tableCount').innerText = `Showing last ${feeds.length} readings`;
+
+  if (feeds.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--subtext);">No telemetry feeds received yet for Node #${activeNodeId}.</td></tr>`;
+    return;
+  }
+
+  let html = '';
+  for (let i = feeds.length - 1; i >= 0; i--) {
+    const f = feeds[i];
+    html += `<tr>
+      <td><strong>#${f.entry_id}</strong></td>
+      <td>${formatTime(f.created_at)}</td>
+      <td>${f.field1 ? Number(f.field1).toFixed(1) : '--'}</td>
+      <td>${f.field2 ? Number(f.field2).toFixed(0) + '%' : '--'}</td>
+      <td>${f.field3 ? Number(f.field3).toFixed(0) : '--'}</td>
+      <td>${f.field4 ? Number(f.field4).toFixed(1) + '%' : '--'}</td>
+      <td>${f.field5 ? Number(f.field5).toFixed(2) : '--'}</td>
+      <td>${f.field6 ? f.field6 : '--'}</td>
+      <td>${f.field7 ? f.field7 : '--'}</td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+// ==============================================================================
+// TELEMETRY TRENDS CANVAS CHART
+// ==============================================================================
+function toggleChartMetric(m) {
+  chartMetrics[m] = !chartMetrics[m];
+  const btn = document.getElementById('btnChart' + m.charAt(0).toUpperCase() + m.slice(1));
+  if (btn) btn.classList.toggle('active', chartMetrics[m]);
+  drawTelemetryChart();
+}
+
+function drawTelemetryChart() {
+  const canvas = document.getElementById('telemetryChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  // Handle high-DPI displays
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 240 * dpr;
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width;
+  const H = 240;
+  const pad = { top: 20, right: 20, bottom: 30, left: 45 };
+
+  ctx.clearRect(0, 0, W, H);
+
+  const feeds = nodeFeeds[activeNodeId] || [];
+  if (feeds.length < 2) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Collecting feeds for real-time trend visualization...', W / 2, H / 2);
+    return;
+  }
+
+  // Draw Grid lines
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1;
+  for (let y = pad.top; y <= H - pad.bottom; y += 45) {
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(W - pad.right, y);
+    ctx.stroke();
+  }
+
+  const series = [
+    { key: 'field1', name: 'Temp', color: '#f97316', enabled: chartMetrics.temp, min: 10, max: 45 },
+    { key: 'field2', name: 'Humidity', color: '#06b6d4', enabled: chartMetrics.hum, min: 0, max: 100 },
+    { key: 'field3', name: 'Lux', color: '#eab308', enabled: chartMetrics.lux, min: 0, max: 2000, scale: 0.05 },
+    { key: 'field6', name: 'PM2.5', color: '#ef4444', enabled: chartMetrics.pm25, min: 0, max: 100 }
+  ];
+
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+  const stepX = plotW / (feeds.length - 1);
+
+  series.forEach(s => {
+    if (!s.enabled) return;
+
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    let started = false;
+
+    feeds.forEach((f, idx) => {
+      let val = parseVal(f[s.key]);
+      if (val === null) return;
+      if (s.scale) val = val * s.scale;
+
+      const norm = Math.max(0, Math.min(1, (val - s.min) / (s.max - s.min)));
+      const x = pad.left + idx * stepX;
+      const y = (H - pad.bottom) - norm * plotH;
+
+      if (!started) {
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
   });
 }
 
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('PWA ServiceWorker registered with scope:', reg.scope))
-      .catch(err => console.log('PWA ServiceWorker registration failed:', err));
+// ==============================================================================
+// SETTINGS MODAL & PERSISTENCE
+// ==============================================================================
+function openSettingsModal() {
+  document.getElementById('cfgN1Name').value = nodesConfig[1].name;
+  document.getElementById('cfgN1Channel').value = nodesConfig[1].channelId;
+  document.getElementById('cfgN1Key').value = nodesConfig[1].readKey;
+  document.getElementById('cfgN1Lat').value = nodesConfig[1].lat;
+  document.getElementById('cfgN1Lon').value = nodesConfig[1].lon;
+
+  document.getElementById('cfgN2Name').value = nodesConfig[2].name;
+  document.getElementById('cfgN2Channel').value = nodesConfig[2].channelId;
+  document.getElementById('cfgN2Key').value = nodesConfig[2].readKey;
+  document.getElementById('cfgN2Lat').value = nodesConfig[2].lat;
+  document.getElementById('cfgN2Lon').value = nodesConfig[2].lon;
+
+  document.getElementById('cfgInterval').value = globalIntervalSec;
+  document.getElementById('cfgResults').value = globalResultsCount;
+  document.getElementById('cfgCartoKey').value = nodesConfig.cartoApiKey !== undefined ? nodesConfig.cartoApiKey : DEFAULT_NODES.cartoApiKey;
+
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettingsModal() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+
+function handleModalOverlayClick(e) {
+  if (e.target.id === 'settingsModal') closeSettingsModal();
+}
+
+function resetSettingsDefaults() {
+  nodesConfig = JSON.parse(JSON.stringify(DEFAULT_NODES));
+  globalIntervalSec = 20;
+  globalResultsCount = 30;
+  openSettingsModal();
+}
+
+function saveSettings() {
+  nodesConfig[1].name = document.getElementById('cfgN1Name').value.trim() || DEFAULT_NODES[1].name;
+  nodesConfig[1].channelId = document.getElementById('cfgN1Channel').value.trim() || DEFAULT_NODES[1].channelId;
+  nodesConfig[1].readKey = document.getElementById('cfgN1Key').value.trim() || DEFAULT_NODES[1].readKey;
+  nodesConfig[1].lat = parseFloat(document.getElementById('cfgN1Lat').value) || DEFAULT_NODES[1].lat;
+  nodesConfig[1].lon = parseFloat(document.getElementById('cfgN1Lon').value) || DEFAULT_NODES[1].lon;
+
+  nodesConfig[2].name = document.getElementById('cfgN2Name').value.trim() || DEFAULT_NODES[2].name;
+  nodesConfig[2].channelId = document.getElementById('cfgN2Channel').value.trim() || DEFAULT_NODES[2].channelId;
+  nodesConfig[2].readKey = document.getElementById('cfgN2Key').value.trim() || DEFAULT_NODES[2].readKey;
+  nodesConfig[2].lat = parseFloat(document.getElementById('cfgN2Lat').value) || DEFAULT_NODES[2].lat;
+  nodesConfig[2].lon = parseFloat(document.getElementById('cfgN2Lon').value) || DEFAULT_NODES[2].lon;
+
+  nodesConfig.cartoApiKey = document.getElementById('cfgCartoKey').value.trim();
+
+  globalIntervalSec = Math.max(15, parseInt(document.getElementById('cfgInterval').value) || 20);
+  globalResultsCount = Math.max(5, Math.min(100, parseInt(document.getElementById('cfgResults').value) || 30));
+
+  saveSettingsToStorage();
+  closeSettingsModal();
+
+  // Refresh Tabs Labels
+  document.getElementById('tabNode1').firstChild.textContent = `📍 ${nodesConfig[1].name} `;
+  document.getElementById('tabNode2').firstChild.textContent = `📍 ${nodesConfig[2].name} `;
+
+  // Reposition Map Markers & Refresh Tile Layer
+  if (mapMarkers[1]) mapMarkers[1].setLatLng([nodesConfig[1].lat, nodesConfig[1].lon]);
+  if (mapMarkers[2]) mapMarkers[2].setLatLng([nodesConfig[2].lat, nodesConfig[2].lon]);
+  applyTileLayer();
+
+  syncAllNodes();
+}
+
+// ==============================================================================
+// PWA INSTALLATION SUPPORT
+// ==============================================================================
+let deferredPrompt = null;
+function setupPWA() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('btnInstall');
+    if (btn) btn.style.display = 'inline-flex';
   });
 }
 
-// Keyboard shortcuts (Escape closes modal)
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeSettingsModal();
+function promptInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('btnInstall').style.display = 'none';
+    });
+  }
+}
+
+// Window resize listener to re-draw responsive canvas chart
+window.addEventListener('resize', () => {
+  drawTelemetryChart();
+  if (mapInstance) mapInstance.invalidateSize();
 });
 
-// Initialization
-loadSettings();
-fetchData(true);
-startCountdown();
+// Launch App on DOM ready
+document.addEventListener('DOMContentLoaded', initApp);
 </script>
-
 </body>
 </html>
