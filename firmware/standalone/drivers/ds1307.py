@@ -33,7 +33,7 @@ class DS1307:
         try:
             self.i2c.writeto(self.addr, bytes([0x00]))
             data = self.i2c.readfrom(self.addr, 7)
-            sec = self._bcd2dec(data[0] & 0x7F)
+            second = self._bcd2dec(data[0] & 0x7F)
             minute = self._bcd2dec(data[1])
             hour = self._bcd2dec(data[2] & 0x3F)
             day = self._bcd2dec(data[4])

@@ -100,6 +100,13 @@ def sync_ntp_time(rtc):
         t_local = time.time() + tz_offset_sec
         tm = time.localtime(t_local)
 
+        # Update ESP32 internal RTC to local time
+        try:
+            import machine
+            machine.RTC().datetime((tm[0], tm[1], tm[2], tm[6], tm[3], tm[4], tm[5], 0))
+        except Exception:
+            pass
+
         if rtc and rtc.is_connected():
             rtc.set_time(tm[0], tm[1], tm[2], tm[3], tm[4], tm[5])
             print(f"[OK] NTP Synchronized DS1307 RTC: {rtc.get_timestamp()} (UTC+{config.TIMEZONE_OFFSET_HOURS})")
