@@ -50,7 +50,7 @@ THINGSPEAK_NODES = {
         "channel_id": "3543024",
         "write_key": "L6L7UKBD93OYKONW",
         "read_key": "WK8Z6FH8W8UTJS7Q",
-        "name": "Node 1 (Station North)",
+        "name": "Node 1",
         "lat": 10.841168077294883,
         "lon": 106.80988926666828
     },
@@ -58,7 +58,7 @@ THINGSPEAK_NODES = {
         "channel_id": "3558474",
         "write_key": "QE9HFS7ZZZLYEQ6V",
         "read_key": "6Y885RXM1MREEGV1",
-        "name": "Node 2 (Station South)",
+        "name": "Node 2",
         "lat": 10.840083260390088,
         "lon": 106.81139950400448
     }

@@ -52,7 +52,7 @@ TIMEZONE_OFFSET_HOURS = 7  # Indochina Time (UTC+7)
 # Telemetry Sampling & Cloud Upload Interval
 INTERVAL_SEC = 20
 
-# ThingSpeak Cloud IoT Configuration (Channel 1: Station North)
+# ThingSpeak Cloud IoT Configuration (Channel 1)
 THINGSPEAK_CHANNEL_ID         = "3543024"
 THINGSPEAK_API_KEY            = "L6L7UKBD93OYKONW"  # Write API Key
 THINGSPEAK_READ_KEY           = "WK8Z6FH8W8UTJS7Q"  # Read API Key
@@ -61,8 +61,8 @@ THINGSPEAK_PORT               = 80
 THINGSPEAK_FAIL_THRESHOLD     = 3
 THINGSPEAK_RETRY_INTERVAL_SEC = 60
 
-# Station Metadata & Geographic Coordinates
+# Node Metadata & Geographic Coordinates
 STATION_NODE_ID = 1
-STATION_NAME    = "Node 1 (Station North)"
+STATION_NAME    = "Node 1"
 STATION_LAT     = 10.841168077294883
 STATION_LON     = 106.80988926666828

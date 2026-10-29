@@ -2,7 +2,7 @@
 // ESP32 Weather Station PWA Service Worker
 // Enables offline asset caching and PWA installation on Android & Desktop
 // ==============================================================================
-const CACHE_NAME = 'weather-station-pwa-v2';
+const CACHE_NAME = 'weather-station-pwa-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

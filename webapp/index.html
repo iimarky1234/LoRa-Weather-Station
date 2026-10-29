@@ -105,8 +105,11 @@ h1 {
   transition: all 0.3s;
 }
 
-.status-pill.paused { background: #451a03; color: #fed7aa; }
-.status-pill.error { background: #450a0a; color: #fecaca; }
+.status-pill.online { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
+.status-pill.offline { background: #450a0a; color: #fecaca; border: 1px solid #dc2626; }
+.status-pill.paused { background: #451a03; color: #fed7aa; border: 1px solid #d97706; }
+.status-pill.syncing { background: #0f172a; color: #38bdf8; border: 1px solid #0284c7; }
+.status-pill.error { background: #450a0a; color: #fecaca; border: 1px solid #dc2626; }
 
 .dot {
   width: 8px;
@@ -115,7 +118,10 @@ h1 {
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
+.dot.online { background: var(--green); animation: pulse 2s infinite; }
+.dot.offline { background: var(--red); animation: none; }
 .dot.paused { background: var(--yellow); animation: none; }
+.dot.syncing { background: var(--accent); animation: pulse 0.8s infinite; }
 .dot.error { background: var(--red); animation: none; }
 
 @keyframes pulse {
@@ -266,9 +272,20 @@ h1 {
 }
 .marker-pin.active {
   background: #0284c7;
-  border: 3px solid #facc15;
-  box-shadow: 0 0 18px rgba(250, 204, 21, 0.8);
+  border: 3px solid #facc15 !important;
+  box-shadow: 0 0 18px rgba(250, 204, 21, 0.85) !important;
   transform: scale(1.15);
+}
+.marker-pin.pin-online {
+  background: #0284c7;
+  border-color: #22c55e;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+}
+.marker-pin.pin-offline {
+  background: #334155;
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  opacity: 0.85;
 }
 
 /* ==============================================================================
@@ -313,10 +330,49 @@ h1 {
 
 .node-tab-btn .tab-badge {
   font-size: 0.7rem;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.35);
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.node-tab-btn .tab-badge.badge-online {
+  background: #064e3b;
+  color: #a7f3d0;
+  border: 1px solid #059669;
+}
+
+.node-tab-btn .tab-badge.badge-offline {
+  background: #450a0a;
+  color: #fecaca;
+  border: 1px solid #dc2626;
+}
+
+.offline-banner {
+  display: none;
+  background: #450a0a;
+  border: 1px solid #dc2626;
+  color: #fecaca;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.82rem;
   font-weight: 500;
+  margin-bottom: 16px;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.3s ease;
+}
+.offline-banner.visible {
+  display: flex;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.grid.node-offline .bar-fill {
+  opacity: 0.4;
 }
 
 .actions {
@@ -636,11 +692,11 @@ tr:hover td {
     <div class="map-header">
       <div class="map-title">
         🗺️ Geographic Node Locations
-        <span style="font-size:0.75rem;color:var(--subtext);font-weight:normal;">(Click a station pin to view details)</span>
+        <span style="font-size:0.75rem;color:var(--subtext);font-weight:normal;">(Click a node pin to view details)</span>
       </div>
       <div class="map-legend">
         <div class="legend-item"><div class="legend-dot" style="background:#facc15;"></div> Active Selection</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#38bdf8;"></div> Field Station</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#38bdf8;"></div> Field Node</div>
       </div>
     </div>
     <div id="map"></div>
@@ -649,10 +705,10 @@ tr:hover td {
   <!-- Node Selector Tabs Bar -->
   <div class="node-tabs-bar" id="nodeTabsBar">
     <button class="node-tab-btn active" id="tabNode1" onclick="switchActiveNode(1)">
-      📍 Node 1 (Station North) <span class="tab-badge" id="badgeNode1">Syncing...</span>
+      📍 Node 1 <span class="tab-badge" id="badgeNode1">Syncing...</span>
     </button>
     <button class="node-tab-btn" id="tabNode2" onclick="switchActiveNode(2)">
-      📍 Node 2 (Station South) <span class="tab-badge" id="badgeNode2">Syncing...</span>
+      📍 Node 2 <span class="tab-badge" id="badgeNode2">Syncing...</span>
     </button>
   </div>
 
@@ -664,8 +720,13 @@ tr:hover td {
     <button class="btn btn-install" id="btnInstall" onclick="promptInstall()">📱 Install App</button>
   </div>
 
+  <!-- Offline Warning Banner -->
+  <div id="offlineBanner" class="offline-banner">
+    <span id="offlineBannerText">⚠️ Node is Offline - Showing cached readings</span>
+  </div>
+
   <!-- 7-Sensor Telemetry Grid for Selected Node -->
-  <div class="grid">
+  <div class="grid" id="telemetryGrid">
     <!-- 1. Temperature -->
     <div class="card">
       <div class="card-header"><span>Temperature</span><span>🌡️</span></div>
@@ -730,12 +791,12 @@ tr:hover td {
 
     <!-- 8. Link & Location Info -->
     <div class="card">
-      <div class="card-header"><span>Station Location</span><span>📍</span></div>
+      <div class="card-header"><span>Node Location</span><span>📍</span></div>
       <div class="card-val" style="font-size:1.15rem;margin-top:6px;line-height:1.3;">
         <span id="valCoords">--</span>
       </div>
       <div class="card-sub" style="margin-top:8px;">
-        <span id="valLocationName">Active Node</span>
+        <span id="valLocationName">Node 1</span>
       </div>
       <div class="bar"><div class="bar-fill" style="width:100%;background:var(--indigo);"></div></div>
     </div>
@@ -744,7 +805,7 @@ tr:hover td {
   <!-- Status Summary Box -->
   <div class="status-box">
     <div class="status-item">
-      🏷️ <strong>Active Station:</strong> <span id="lblActiveStation" style="color:var(--accent);">Node 1</span>
+      🏷️ <strong>Active Node:</strong> <span id="lblActiveStation" style="color:var(--accent);">Node 1</span>
     </div>
     <div class="status-item">
       🕒 <strong>Latest Reading:</strong> <span id="valTime" style="color:#f8fafc;">--</span>
@@ -903,7 +964,7 @@ tr:hover td {
 const DEFAULT_NODES = {
   1: {
     id: 1,
-    name: "Node 1 (Station North)",
+    name: "Node 1",
     channelId: "3543024",
     readKey: "WK8Z6FH8W8UTJS7Q",
     lat: 10.841168077294883,
@@ -911,7 +972,7 @@ const DEFAULT_NODES = {
   },
   2: {
     id: 2,
-    name: "Node 2 (Station South)",
+    name: "Node 2",
     channelId: "3558474",
     readKey: "6Y885RXM1MREEGV1",
     lat: 10.840083260390088,
@@ -957,7 +1018,16 @@ function loadStoredSettings() {
     const saved = localStorage.getItem('weather_station_multinode_cfg');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.nodes) nodesConfig = parsed.nodes;
+      if (parsed.nodes) {
+        nodesConfig = parsed.nodes;
+        // Clean up legacy station names if present
+        if (nodesConfig[1] && (!nodesConfig[1].name || nodesConfig[1].name.includes("Station North"))) {
+          nodesConfig[1].name = "Node 1";
+        }
+        if (nodesConfig[2] && (!nodesConfig[2].name || nodesConfig[2].name.includes("Station South"))) {
+          nodesConfig[2].name = "Node 2";
+        }
+      }
       if (parsed.intervalSec) globalIntervalSec = parsed.intervalSec;
       if (parsed.resultsCount) globalResultsCount = parsed.resultsCount;
     }
@@ -1053,14 +1123,47 @@ function createNodeMarker(nid) {
   mapMarkers[nid] = marker;
 }
 
+function getNodeHealth(nid) {
+  const latest = nodeLatest[nid];
+  if (!latest || !latest.created_at) {
+    return { isOnline: false, text: "Offline", timeAgo: "No Data", ageSec: Infinity };
+  }
+  const createdMs = new Date(latest.created_at).getTime();
+  const ageSec = Math.max(0, Math.floor((Date.now() - createdMs) / 1000));
+  const isOnline = ageSec <= 120; // 2-minute online threshold
+
+  let timeAgo = "";
+  if (ageSec < 60) {
+    timeAgo = `${ageSec}s ago`;
+  } else if (ageSec < 3600) {
+    timeAgo = `${Math.floor(ageSec / 60)}m ago`;
+  } else if (ageSec < 86400) {
+    const hrs = Math.floor(ageSec / 3600);
+    const mins = Math.floor((ageSec % 3600) / 60);
+    timeAgo = `${hrs}h ${mins}m ago`;
+  } else {
+    timeAgo = `${Math.floor(ageSec / 86400)}d ago`;
+  }
+
+  return { isOnline, text: isOnline ? "Online" : "Offline", timeAgo, ageSec };
+}
+
 function buildPopupHtml(nid) {
   const node = nodesConfig[nid];
   const d = nodeLatest[nid] || {};
+  const h = getNodeHealth(nid);
+  const statusBadge = h.isOnline
+    ? `<span style="background:#065f46;color:#6ee7b7;padding:2px 7px;border-radius:12px;font-size:0.7rem;font-weight:600;">● Online (${h.timeAgo})</span>`
+    : `<span style="background:#7f1d1d;color:#fca5a5;padding:2px 7px;border-radius:12px;font-size:0.7rem;font-weight:600;">✕ Offline (${h.timeAgo})</span>`;
+
   return `
     <div class="popup-node-card">
-      <div class="popup-title">📍 ${node.name}</div>
+      <div class="popup-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>📍 ${node.name}</span>
+        ${statusBadge}
+      </div>
       <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">
-        Last Sync: ${d.created_at ? formatTime(d.created_at) : 'Waiting for telemetry...'}
+        Last Reading: ${d.created_at ? formatTime(d.created_at) : 'Waiting for telemetry...'}
       </div>
       <div class="popup-grid">
         <div class="popup-item"><span>Temp</span><strong>${d.field1 !== undefined && d.field1 !== null ? Number(d.field1).toFixed(1) + '°C' : '--'}</strong></div>
@@ -1070,19 +1173,23 @@ function buildPopupHtml(nid) {
         <div class="popup-item"><span>UVI</span><strong>${d.field5 !== undefined && d.field5 !== null ? Number(d.field5).toFixed(1) : '--'}</strong></div>
         <div class="popup-item"><span>PM2.5</span><strong>${d.field6 !== undefined && d.field6 !== null ? d.field6 + ' µg' : '--'}</strong></div>
       </div>
-      <button class="btn-popup-select" onclick="switchActiveNode(${nid})">Select This Station</button>
+      <button class="btn-popup-select" onclick="switchActiveNode(${nid})">Select ${node.name}</button>
     </div>
   `;
 }
 
 function updateMapMarkerPopups() {
   for (let nid in mapMarkers) {
+    const n = Number(nid);
     const pin = document.getElementById('markerPin' + nid);
+    const h = getNodeHealth(n);
     if (pin) {
-      if (Number(nid) === activeNodeId) pin.classList.add('active');
-      else pin.classList.remove('active');
+      pin.className = 'marker-pin';
+      if (n === activeNodeId) pin.classList.add('active');
+      if (h.isOnline) pin.classList.add('pin-online');
+      else pin.classList.add('pin-offline');
     }
-    mapMarkers[nid].setPopupContent(buildPopupHtml(Number(nid)));
+    mapMarkers[nid].setPopupContent(buildPopupHtml(n));
   }
 }
 
@@ -1111,12 +1218,32 @@ function switchActiveNode(nid) {
 function renderActiveNodeTelemetry() {
   const node = nodesConfig[activeNodeId];
   const d = nodeLatest[activeNodeId] || {};
+  const h = getNodeHealth(activeNodeId);
 
   document.getElementById('lblActiveStation').innerText = node.name;
   document.getElementById('lblTableNode').innerText = node.name;
   document.getElementById('valChannel').innerText = node.channelId;
   document.getElementById('valCoords').innerText = `${node.lat.toFixed(6)}, ${node.lon.toFixed(6)}`;
   document.getElementById('valLocationName').innerText = `${node.name}`;
+
+  // Offline banner for active node
+  const banner = document.getElementById('offlineBanner');
+  const bannerText = document.getElementById('offlineBannerText');
+  const telemetryGrid = document.getElementById('telemetryGrid');
+  if (banner && bannerText) {
+    if (!h.isOnline && d.created_at) {
+      bannerText.innerText = `⚠️ ${node.name} is Offline - Showing cached readings from ${h.timeAgo} (${formatTime(d.created_at)})`;
+      banner.classList.add('visible');
+      if (telemetryGrid) telemetryGrid.classList.add('node-offline');
+    } else if (!h.isOnline && !d.created_at) {
+      bannerText.innerText = `⚠️ ${node.name} is Offline - No telemetry data received yet.`;
+      banner.classList.add('visible');
+      if (telemetryGrid) telemetryGrid.classList.add('node-offline');
+    } else {
+      banner.classList.remove('visible');
+      if (telemetryGrid) telemetryGrid.classList.remove('node-offline');
+    }
+  }
 
   // Fields Mapping:
   // field1: temp, field2: hum, field3: lux, field4: soil, field5: uvi, field6: pm2.5, field7: pm10
@@ -1234,48 +1361,74 @@ async function fetchNodeChannel(nid) {
 }
 
 async function syncAllNodes() {
-  updateStatus("Syncing...", "sync");
+  setSyncingStatus();
 
   const p1 = fetchNodeChannel(1);
   const p2 = fetchNodeChannel(2);
   await Promise.all([p1, p2]);
 
-  // Update Tab Badges
-  const b1 = document.getElementById('badgeNode1');
-  const b2 = document.getElementById('badgeNode2');
-  if (b1) b1.innerText = nodeLatest[1] ? 'Online' : 'Offline';
-  if (b2) b2.innerText = nodeLatest[2] ? 'Online' : 'Offline';
-
-  updateStatus("Online (Synced)", "ok");
+  updateAllNodeStatuses();
   updateMapMarkerPopups();
   renderActiveNodeTelemetry();
   drawTelemetryChart();
 }
 
 async function syncActiveNode() {
-  updateStatus("Syncing...", "sync");
+  setSyncingStatus();
   await fetchNodeChannel(activeNodeId);
-  updateStatus("Online (Synced)", "ok");
+  updateAllNodeStatuses();
   updateMapMarkerPopups();
   renderActiveNodeTelemetry();
   drawTelemetryChart();
 }
 
-function updateStatus(text, state) {
+function setSyncingStatus() {
   const pill = document.getElementById('statusPill');
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
+  const node = nodesConfig[activeNodeId] || { name: `Node ${activeNodeId}` };
 
-  txt.innerText = text;
+  pill.className = "status-pill syncing";
+  dot.className = "dot syncing";
+  txt.innerText = `${node.name}: Syncing...`;
+}
+
+function updateAllNodeStatuses() {
+  // 1. Update Tab Badges
+  for (let nid of [1, 2]) {
+    const b = document.getElementById('badgeNode' + nid);
+    if (b) {
+      const h = getNodeHealth(nid);
+      b.className = "tab-badge " + (h.isOnline ? "badge-online" : "badge-offline");
+      b.innerText = h.isOnline ? `● Online (${h.timeAgo})` : `✕ Offline (${h.timeAgo})`;
+    }
+  }
+
+  // 2. Update Header Status Pill for active selected node
+  const pill = document.getElementById('statusPill');
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  const node = nodesConfig[activeNodeId] || { name: `Node ${activeNodeId}` };
+  const h = getNodeHealth(activeNodeId);
+
   pill.className = "status-pill";
   dot.className = "dot";
 
-  if (state === "pause") {
+  if (!autoSync) {
     pill.classList.add("paused");
     dot.classList.add("paused");
-  } else if (state === "error") {
-    pill.classList.add("error");
-    dot.classList.add("error");
+    txt.innerText = `${node.name}: Auto-Sync Paused`;
+    return;
+  }
+
+  if (h.isOnline) {
+    pill.classList.add("online");
+    dot.classList.add("online");
+    txt.innerText = `${node.name}: Online (${h.timeAgo})`;
+  } else {
+    pill.classList.add("offline");
+    dot.classList.add("offline");
+    txt.innerText = `${node.name}: Offline (${h.timeAgo === 'No Data' ? 'No Data' : 'Last seen ' + h.timeAgo})`;
   }
 }
 
@@ -1284,6 +1437,11 @@ function startCountdown() {
   if (countdownTimer) clearInterval(countdownTimer);
 
   countdownTimer = setInterval(() => {
+    // 1. Ticking relative time display every second
+    updateAllNodeStatuses();
+    updateMapMarkerPopups();
+
+    // 2. Countdown logic
     if (autoSync) {
       secondsRemaining--;
       if (secondsRemaining <= 0) {
@@ -1298,13 +1456,8 @@ function startCountdown() {
 function toggleAutoSync() {
   autoSync = !autoSync;
   const btn = document.getElementById('btnAuto');
-  if (autoSync) {
-    btn.innerText = "⏸️ Pause Auto-Sync";
-    updateStatus("Online (Synced)", "ok");
-  } else {
-    btn.innerText = "▶️ Resume Auto-Sync";
-    updateStatus("Auto-Sync Paused", "pause");
-  }
+  btn.innerText = autoSync ? "⏸️ Pause Auto-Sync" : "▶️ Resume Auto-Sync";
+  updateAllNodeStatuses();
 }
 
 // ==============================================================================

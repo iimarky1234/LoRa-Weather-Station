@@ -92,10 +92,10 @@ The Central Gateway implements fault-tolerant persistent storage:
 
 ### Configured Telemetry Channels & Locations
 
-* **📍 Node 1 (Station North):**
+* **📍 Node 1:**
   * **ThingSpeak Channel:** `3543024` (Write: `XXXXXXXXXXX` / Read: `WK8Z6FH8W8UTJS7Q`)
   * **Coordinates:** `10.841168, 106.809889`
-* **📍 Node 2 (Station South):**
+* **📍 Node 2:**
   * **ThingSpeak Channel:** `3558474` (Write: `XXXXXXXXXXX` / Read: `6Y885RXM1MREEGV1`)
   * **Coordinates:** `10.840083, 106.811400`
 

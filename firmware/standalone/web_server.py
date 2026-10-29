@@ -78,7 +78,7 @@ tr:hover td { background: #334155; }
 
   <!-- Node Navigation Tabs (Maintains Gateway Layout) -->
   <div class="node-tabs" id="nodeTabs">
-    <button class="node-tab active" id="tabNode1" onclick="selectNode(1)">📍 Node #1 (Local Station) <span class="tag" id="tagNode1">Online</span></button>
+    <button class="node-tab active" id="tabNode1" onclick="selectNode(1)">📍 Node #1 <span class="tag" id="tagNode1">Online</span></button>
   </div>
 
   <div class="actions">
@@ -140,7 +140,7 @@ tr:hover td { background: #334155; }
   </div>
 
   <div class="status-box">
-    <div class="status-item">🏷️ <strong>Station:</strong> <span id="valNode" style="color:#a78bfa;">Node #1 (North Station)</span></div>
+    <div class="status-item">🏷️ <strong>Selected Node:</strong> <span id="valNode" style="color:#a78bfa;">Node #1</span></div>
     <div class="status-item">🕒 <strong>Last Reading:</strong> <span id="valTime" style="color:var(--accent);">--</span></div>
     <div class="status-item">🔌 <strong>Bus Link:</strong> <span id="valBus">Direct Onboard I2C / ADC</span></div>
     <div class="status-item">💾 <strong>Storage:</strong> <span id="valSd">Checking...</span></div>
@@ -192,7 +192,7 @@ function selectNode(id) {
 function renderActiveNode() {
   const d = (cachedData.nodes && cachedData.nodes[selectedNodeId]) || cachedData.latest || {};
   
-  document.getElementById('valNode').innerText = `Node #${selectedNodeId} (Local Station)`;
+  document.getElementById('valNode').innerText = `Node #${selectedNodeId}`;
   document.getElementById('valTemp').innerText = d.temp !== null && d.temp !== undefined ? Number(d.temp).toFixed(1) : '--';
   document.getElementById('valHum').innerText = d.hum !== null && d.hum !== undefined ? Number(d.hum).toFixed(0) : '--';
   document.getElementById('valLux').innerText = d.lux !== null && d.lux !== undefined ? Number(d.lux).toFixed(0) : '--';
