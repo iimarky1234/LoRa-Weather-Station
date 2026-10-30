@@ -14,6 +14,7 @@ from status_led import StatusLED
 from storage import StandaloneStorage
 from thingspeak import StandaloneThingSpeakClient
 from web_server import StandaloneWebServer
+from dns_server import CaptiveDNSServer
 
 from drivers.am2301b import AM2301B
 from drivers.bh1750 import BH1750
@@ -34,6 +35,9 @@ STATE_ERROR         = "ERROR"
 
 current_state = STATE_BOOTING
 local_ip = None
+
+# Captive DNS Server for AP Mode
+dns_server = CaptiveDNSServer(getattr(config, "AP_IP", "192.168.4.1"))
 
 # Shared telemetry cache for cloud streaming
 latest_reading = {
@@ -119,16 +123,35 @@ def sync_ntp_time(rtc):
 
 def start_hotspot():
     print(f"\n[WIFI] Broadcasting Hotspot: '{config.AP_SSID}'...")
+    try:
+        sta_if.disconnect()
+        sta_if.active(False)
+        time.sleep_ms(100)
+    except Exception:
+        pass
+
     ap_if.active(True)
+    time.sleep_ms(100)
+
+    # Explicit static IP configuration: IP, netmask, gateway, and primary DNS
+    ap_ip = getattr(config, "AP_IP", "192.168.4.1")
+    ap_if.ifconfig((ap_ip, "255.255.255.0", ap_ip, ap_ip))
+
     if config.AP_PASSWORD:
         ap_if.config(essid=config.AP_SSID, password=config.AP_PASSWORD)
     else:
         ap_if.config(essid=config.AP_SSID, authmode=0)
+
+    time.sleep_ms(200)
     ip = ap_if.ifconfig()[0]
     print(f"[OK] Hotspot active: http://{ip}/")
+
+    # Start UDP Port 53 DNS Responder to redirect all device requests
+    dns_server.start()
     return ip
 
 def stop_hotspot():
+    dns_server.stop()
     try:
         ap_if.active(False)
     except Exception:
@@ -326,6 +349,7 @@ async def cloud_and_network_task(storage_mgr, web_server, ts_client, led):
                     if success:
                         print(f"[ThingSpeak] Cloud Reconnected! Entry #{res}. Stopping local web service...")
                         await web_server.stop()
+                        stop_hotspot()
                         led.set_green()
                         current_state = STATE_ONLINE
                         consecutive_errors = 0

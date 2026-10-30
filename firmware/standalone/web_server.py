@@ -279,6 +279,9 @@ setInterval(() => { if (autoRefresh) fetchData(); }, 3000);
 </body>
 </html>"""
 
+# Pre-encode HTML to avoid high-heap allocations during concurrent client requests
+DASHBOARD_HTML_BYTES = DASHBOARD_HTML.encode('utf-8')
+
 class StandaloneWebServer:
     def __init__(self, storage_mgr):
         self.storage_mgr = storage_mgr
@@ -328,7 +331,13 @@ class StandaloneWebServer:
 
     async def handle_client(self, reader, writer):
         try:
-            line = await reader.readline()
+            # 1. Read HTTP request line with timeout
+            try:
+                line = await asyncio.wait_for(reader.readline(), 3.0)
+            except Exception:
+                await writer.aclose()
+                return
+
             if not line:
                 await writer.aclose()
                 return
@@ -339,23 +348,56 @@ class StandaloneWebServer:
                 await writer.aclose()
                 return
 
-            method, path = parts[0], parts[1]
+            method, raw_path = parts[0], parts[1]
 
+            # 2. Drain headers with timeout to prevent hanging connections
             while True:
-                h_line = await reader.readline()
+                try:
+                    h_line = await asyncio.wait_for(reader.readline(), 2.0)
+                except Exception:
+                    break
                 if not h_line or h_line == b"\r\n" or h_line == b"\n" or h_line.strip() == b"":
                     break
 
+            # 3. Normalize path: strip query parameters and absolute URL proxy prefixes
+            path = raw_path.split("?")[0]
+            if "://" in path:
+                scheme_removed = path.split("://", 1)[1]
+                path = "/" + scheme_removed.split("/", 1)[1] if "/" in scheme_removed else "/"
+
+            # 4. Captive Portal Detection Endpoints (Android, iOS, Windows, Chrome)
+            if path in (
+                "/generate_204", "/gen_204", "/connectivitycheck",
+                "/hotspot-detect.html", "/library/test/success.html",
+                "/ncsi.txt", "/connecttest.txt", "/canonical.html", "/success.txt"
+            ):
+                redirect_resp = (
+                    b"HTTP/1.1 302 Found\r\n"
+                    b"Location: http://192.168.4.1/\r\n"
+                    b"Content-Length: 0\r\n"
+                    b"Connection: close\r\n\r\n"
+                )
+                writer.write(redirect_resp)
+                await writer.drain()
+                return
+
+            # 5. Main Dashboard Page (or catch-all on root)
             if path == "/" or path == "/index.html":
-                body = DASHBOARD_HTML.encode('utf-8')
-                resp = (
+                body = DASHBOARD_HTML_BYTES
+                hdr = (
                     b"HTTP/1.1 200 OK\r\n"
                     b"Content-Type: text/html; charset=utf-8\r\n"
                     b"Content-Length: " + str(len(body)).encode('utf-8') + b"\r\n"
-                    b"Connection: close\r\n\r\n" + body
+                    b"Connection: close\r\n\r\n"
                 )
-                writer.write(resp)
+                writer.write(hdr)
                 await writer.drain()
+
+                # Stream response in 1024-byte chunks with await writer.drain() to protect ESP32 TCP window
+                chunk_size = 1024
+                for offset in range(0, len(body), chunk_size):
+                    writer.write(body[offset:offset + chunk_size])
+                    await writer.drain()
 
             elif path == "/api/data":
                 payload = {
@@ -416,9 +458,26 @@ class StandaloneWebServer:
                                 await writer.drain()
                     except Exception:
                         pass
-            else:
-                writer.write(b"HTTP/1.1 404 Not Found\r\n\r\nNot Found")
+
+            elif path == "/favicon.ico":
+                writer.write(b"HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n")
                 await writer.drain()
+
+            else:
+                # Catch-all: For any other GET request (e.g., typing domain or subpath),
+                # redirect directly to root dashboard
+                if method.upper() == "GET":
+                    redirect_resp = (
+                        b"HTTP/1.1 302 Found\r\n"
+                        b"Location: http://192.168.4.1/\r\n"
+                        b"Content-Length: 0\r\n"
+                        b"Connection: close\r\n\r\n"
+                    )
+                    writer.write(redirect_resp)
+                    await writer.drain()
+                else:
+                    writer.write(b"HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\nNot Found")
+                    await writer.drain()
 
         except Exception:
             pass
