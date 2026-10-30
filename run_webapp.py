@@ -43,8 +43,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def guess_type(self, path):
-        if path.endswith('.json') or path.endswith('manifest.json'):
+        if path.endswith('manifest.json'):
             return 'application/manifest+json'
+        if path.endswith('.json'):
+            return 'application/json'
         if path.endswith('.js'):
             return 'application/javascript'
         return super().guess_type(path)

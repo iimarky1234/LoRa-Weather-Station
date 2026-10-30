@@ -1,0 +1,170 @@
+{
+  "version": 2,
+  "intervalSec": 20,
+  "resultsCount": 30,
+  "cartoApiKey": "cb1_4xx0_1_cd11d006961464e31ddff4b1",
+  "nodes": [
+    {
+      "id": 1,
+      "name": "Node 1",
+      "channelId": "3543024",
+      "readKey": "WK8Z6FH8W8UTJS7Q",
+      "lat": 10.841168077294883,
+      "lon": 106.80988926666828,
+      "color": "#38bdf8",
+      "fields": [
+        {
+          "field": "field1",
+          "label": "Temperature",
+          "unit": "°C",
+          "icon": "🌡️",
+          "color": "#f97316",
+          "min": 0,
+          "max": 50,
+          "decimals": 1
+        },
+        {
+          "field": "field2",
+          "label": "Humidity",
+          "unit": "%",
+          "icon": "💧",
+          "color": "#06b6d4",
+          "min": 0,
+          "max": 100,
+          "decimals": 0
+        },
+        {
+          "field": "field3",
+          "label": "Ambient Light",
+          "unit": "Lux",
+          "icon": "☀️",
+          "color": "#eab308",
+          "min": 0,
+          "max": 2000,
+          "decimals": 0
+        },
+        {
+          "field": "field4",
+          "label": "Soil Moisture",
+          "unit": "%",
+          "icon": "🌱",
+          "color": "#22c55e",
+          "min": 0,
+          "max": 100,
+          "decimals": 1
+        },
+        {
+          "field": "field5",
+          "label": "UV Index",
+          "unit": "UVI",
+          "icon": "🟣",
+          "color": "#a855f7",
+          "min": 0,
+          "max": 12,
+          "decimals": 2
+        },
+        {
+          "field": "field6",
+          "label": "PM2.5 Dust",
+          "unit": "µg/m³",
+          "icon": "💨",
+          "color": "#ef4444",
+          "min": 0,
+          "max": 150,
+          "decimals": 0
+        },
+        {
+          "field": "field7",
+          "label": "PM10 Coarse",
+          "unit": "µg/m³",
+          "icon": "🌫️",
+          "color": "#f43f5e",
+          "min": 0,
+          "max": 250,
+          "decimals": 0
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Node 2",
+      "channelId": "3558474",
+      "readKey": "6Y885RXM1MREEGV1",
+      "lat": 10.826706589928447,
+      "lon": 106.80695579264075,
+      "color": "#a78bfa",
+      "fields": [
+        {
+          "field": "field1",
+          "label": "Temperature",
+          "unit": "°C",
+          "icon": "🌡️",
+          "color": "#f97316",
+          "min": 0,
+          "max": 50,
+          "decimals": 1
+        },
+        {
+          "field": "field2",
+          "label": "Humidity",
+          "unit": "%",
+          "icon": "💧",
+          "color": "#06b6d4",
+          "min": 0,
+          "max": 100,
+          "decimals": 0
+        },
+        {
+          "field": "field3",
+          "label": "Ambient Light",
+          "unit": "Lux",
+          "icon": "☀️",
+          "color": "#eab308",
+          "min": 0,
+          "max": 2000,
+          "decimals": 0
+        },
+        {
+          "field": "field4",
+          "label": "Soil Moisture",
+          "unit": "%",
+          "icon": "🌱",
+          "color": "#22c55e",
+          "min": 0,
+          "max": 100,
+          "decimals": 1
+        },
+        {
+          "field": "field5",
+          "label": "UV Index",
+          "unit": "UVI",
+          "icon": "🟣",
+          "color": "#a855f7",
+          "min": 0,
+          "max": 12,
+          "decimals": 2
+        },
+        {
+          "field": "field6",
+          "label": "PM2.5 Dust",
+          "unit": "µg/m³",
+          "icon": "💨",
+          "color": "#ef4444",
+          "min": 0,
+          "max": 150,
+          "decimals": 0
+        },
+        {
+          "field": "field7",
+          "label": "PM10 Coarse",
+          "unit": "µg/m³",
+          "icon": "🌫️",
+          "color": "#f43f5e",
+          "min": 0,
+          "max": 250,
+          "decimals": 0
+        }
+      ]
+    }
+  ]
+}
