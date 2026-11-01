@@ -8,11 +8,6 @@ PIN_I2C_SDA = 8
 PIN_I2C_SCL = 9
 I2C_FREQ    = 100000
 
-# Analog Soil Moisture Probe (ADC2_CH3)
-PIN_SOIL_ADC = 14
-SOIL_DRY_MV  = 1200   # Millivolts in completely dry air (0% moisture)
-SOIL_WET_MV  = 3100   # Millivolts fully submerged in water (100% moisture)
-
 # SPI Bus 1 (Shared with MicroSD)
 PIN_SPI_SCK  = 18
 PIN_SPI_MOSI = 11

@@ -6,9 +6,18 @@ import json
 
 class WeatherPacket:
     @staticmethod
-    def create(node_id, seq, timestamp, temp, hum, lux, soil_pct, uv_raw=0, uvi=0.0, pm25=0, pm10=0, hops=0):
+    def create(node_id, seq, timestamp, temp, hum, lux, uv_raw=0, uvi=0.0, pm25=0, pm10=0, pm1=0, hops=0):
         """
         Builds a structured telemetry packet dict ready for LoRa transmission.
+        Fields:
+          - temp: Temperature (°C)
+          - hum: Relative Humidity (%)
+          - lux: Ambient Light (Lux)
+          - uv_raw: UV Sensor raw count
+          - uvi: UV Index
+          - pm25: PM2.5 particulate concentration (µg/m³)
+          - pm10: PM10 particulate concentration (µg/m³)
+          - pm1: PM1.0 particulate concentration (µg/m³)
         """
         return {
             "node_id": int(node_id),
@@ -19,11 +28,11 @@ class WeatherPacket:
                 "temp": round(float(temp), 2) if temp is not None else None,
                 "hum": round(float(hum), 2) if hum is not None else None,
                 "lux": round(float(lux), 2) if lux is not None else None,
-                "soil_pct": round(float(soil_pct), 2) if soil_pct is not None else None,
                 "uv_raw": int(uv_raw) if uv_raw is not None else 0,
                 "uvi": round(float(uvi), 2) if uvi is not None else 0.0,
                 "pm25": int(pm25) if pm25 is not None else 0,
-                "pm10": int(pm10) if pm10 is not None else 0
+                "pm10": int(pm10) if pm10 is not None else 0,
+                "pm1": int(pm1) if pm1 is not None else 0
             }
         }
 

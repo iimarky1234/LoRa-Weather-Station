@@ -17,7 +17,6 @@ from drivers.am2301b import AM2301B
 from drivers.ltr390 import LTR390
 from drivers.ds1307 import DS1307
 from drivers.apm10 import APM10
-from drivers.soil import SoilMoisture
 
 def main():
     print("=" * 66)
@@ -39,16 +38,19 @@ def main():
     bh = BH1750(i2c)
     am = AM2301B(i2c)
     ltr = LTR390(i2c)
-    apm = APM10(i2c)
-    soil = SoilMoisture(config.PIN_SOIL_ADC, config.SOIL_DRY_MV, config.SOIL_WET_MV)
+    apm = APM10(
+        uart_id=config.UART_ID_APM10,
+        tx_pin=config.PIN_APM10_TX,
+        rx_pin=config.PIN_APM10_RX,
+        baudrate=config.APM10_BAUDRATE
+    )
 
     # Check connection states
     print(f"  * DS1307 RTC:       {'[ONLINE]' if rtc.is_connected() else '[OFFLINE]'}")
     print(f"  * BH1750 Light:     {'[ONLINE]' if bh.is_connected() else '[OFFLINE]'}")
     print(f"  * AM2301B Temp/Hum: {'[ONLINE]' if am.is_connected() else '[OFFLINE]'}")
     print(f"  * LTR390 UV Sensor: {'[ONLINE]' if ltr.is_connected() else '[OFFLINE]'}")
-    print(f"  * APM10 PM Dust:    {'[ONLINE]' if apm.is_connected() else '[OFFLINE]'}")
-    print(f"  * Soil Moisture:    [ANALOG ADC GPIO{config.PIN_SOIL_ADC}]")
+    print(f"  * APM10 PM Dust:    {'[ONLINE]' if apm.is_connected() else '[OFFLINE]'} (UART{config.UART_ID_APM10} TX:{config.PIN_APM10_TX}, RX:{config.PIN_APM10_RX})")
 
     # 4. Initialize SX1278 (Ra-02) LoRa Transceiver
     print(f"\n[INIT] Initializing SX1278 LoRa (SCK:{config.PIN_LORA_SCK}, CS:{config.PIN_LORA_CS}, RST:{config.PIN_LORA_RST})...")
@@ -88,12 +90,11 @@ def main():
             temp, hum = am.read()
             uv_raw, uvi = ltr.read_uv()
             pm1_0, pm2_5, pm10 = apm.read()
-            soil_pct, soil_mv = soil.read_percentage()
 
-            # Terminal log (soil_mv preserved exclusively in terminal print)
-            print(f"[{timestamp}] Node #{config.NODE_ID} | Temp: {temp}°C | Hum: {hum}% | Lux: {lux} | Soil: {soil_pct}% ({soil_mv}mV) | UVI: {uvi} | PM2.5: {pm2_5}")
+            # Terminal log
+            print(f"[{timestamp}] Node #{config.NODE_ID} | Temp: {temp}°C | Hum: {hum}% | Lux: {lux} | UVI: {uvi} | PM1.0: {pm1_0} | PM2.5: {pm2_5} | PM10: {pm10}")
 
-            # Assemble packet (soil_mv excluded from LoRa packet)
+            # Assemble packet
             pkt = WeatherPacket.create(
                 node_id=config.NODE_ID,
                 seq=seq_counter,
@@ -101,11 +102,11 @@ def main():
                 temp=temp if temp is not None else 0.0,
                 hum=hum if hum is not None else 0.0,
                 lux=lux if lux is not None else 0.0,
-                soil_pct=soil_pct,
                 uv_raw=uv_raw if uv_raw is not None else 0,
                 uvi=uvi if uvi is not None else 0.0,
                 pm25=pm2_5 if pm2_5 is not None else 0,
                 pm10=pm10 if pm10 is not None else 0,
+                pm1=pm1_0 if pm1_0 is not None else 0,
                 hops=0
             )
 

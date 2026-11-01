@@ -20,7 +20,6 @@ from drivers.am2301b import AM2301B
 from drivers.bh1750 import BH1750
 from drivers.ltr390 import LTR390
 from drivers.apm10 import APM10
-from drivers.soil import SoilMoisture
 from drivers.ds1307 import DS1307
 
 # Global Network Interfaces
@@ -44,11 +43,10 @@ latest_reading = {
     "temp": None,
     "hum": None,
     "lux": None,
-    "soil_pct": None,
-    "soil_mv": None,
     "uvi": None,
     "pm25": None,
     "pm10": None,
+    "pm1": None,
     "time": "Never"
 }
 
@@ -164,7 +162,6 @@ async def sensor_acquisition_task(sensors, storage_mgr, web_server, led):
     light = sensors.get("light")
     uv = sensors.get("uv")
     dust = sensors.get("dust")
-    soil = sensors.get("soil")
     rtc = sensors.get("rtc")
 
     print("\n[INIT] Starting Sensor Acquisition Task (Interval: {}s)...".format(config.INTERVAL_SEC))
@@ -194,14 +191,6 @@ async def sensor_acquisition_task(sensors, storage_mgr, web_server, led):
                 if l_val is not None:
                     lux = round(l_val, 1)
 
-            # Soil Moisture (Analog Probe)
-            soil_pct, soil_mv = (None, None)
-            if soil:
-                p_val, mv_val = soil.read_percentage()
-                if p_val is not None:
-                    soil_pct = round(p_val, 1)
-                    soil_mv = int(mv_val)
-
             # UV Index (LTR390)
             uvi = None
             if uv:
@@ -210,19 +199,20 @@ async def sensor_acquisition_task(sensors, storage_mgr, web_server, led):
                     uvi = round(u_val, 2)
 
             # Dust Particulate Matter (APM10)
-            pm25, pm10 = (None, None)
+            pm1, pm25, pm10 = (None, None, None)
             if dust:
-                _, p25_val, p10_val = dust.read()
+                p1_val, p25_val, p10_val = dust.read()
                 if p25_val is not None:
+                    pm1 = int(p1_val) if p1_val is not None else 0
                     pm25 = int(p25_val)
                     pm10 = int(p10_val)
 
             # 3. Flash Blue LED on Sensor Sampling
             led.flash_blue(80)
 
-            # 4. Terminal Log Output (Voltage printed strictly in terminal only)
+            # 4. Terminal Log Output
             print(f"\n[SENSOR] Station #{config.STATION_NODE_ID} - {timestamp}")
-            print(f"         Temp: {temp}°C | Hum: {hum}% | Lux: {lux} | Soil: {soil_pct}% ({soil_mv}mV) | UVI: {uvi} | PM2.5: {pm25} | PM10: {pm10}")
+            print(f"         Temp: {temp}°C | Hum: {hum}% | Lux: {lux} | UVI: {uvi} | PM1.0: {pm1} | PM2.5: {pm25} | PM10: {pm10}")
 
             # 5. Build Telemetry Record
             record = {
@@ -232,10 +222,10 @@ async def sensor_acquisition_task(sensors, storage_mgr, web_server, led):
                     "temp": temp,
                     "hum": hum,
                     "lux": lux,
-                    "soil_pct": soil_pct,
                     "uvi": uvi,
                     "pm25": pm25,
-                    "pm10": pm10
+                    "pm10": pm10,
+                    "pm1": pm1
                 },
                 "rssi": "Local",
                 "snr": "Local"
@@ -246,11 +236,10 @@ async def sensor_acquisition_task(sensors, storage_mgr, web_server, led):
                 "temp": temp,
                 "hum": hum,
                 "lux": lux,
-                "soil_pct": soil_pct,
-                "soil_mv": soil_mv,
                 "uvi": uvi,
                 "pm25": pm25,
                 "pm10": pm10,
+                "pm1": pm1,
                 "time": timestamp
             }
 
@@ -281,16 +270,16 @@ async def cloud_and_network_task(storage_mgr, web_server, ts_client, led):
 
             elif current_state == STATE_ONLINE:
                 d = latest_reading
-                has_data = any(d.get(k) is not None for k in ("temp", "hum", "lux", "soil_pct", "uvi", "pm25"))
+                has_data = any(d.get(k) is not None for k in ("temp", "hum", "lux", "uvi", "pm25", "pm10", "pm1"))
                 if has_data:
                     success, res = ts_client.upload(
                         d.get("temp"),
                         d.get("hum"),
                         d.get("lux"),
-                        d.get("soil_pct"),
                         d.get("uvi"),
                         d.get("pm25"),
-                        d.get("pm10")
+                        d.get("pm10"),
+                        d.get("pm1")
                     )
 
                     if success:
@@ -334,16 +323,16 @@ async def cloud_and_network_task(storage_mgr, web_server, ts_client, led):
                 # Attempt reconnecting to ThingSpeak
                 print("\n[NET] Attempting to reconnect to ThingSpeak cloud...")
                 d = latest_reading
-                has_data = any(d.get(k) is not None for k in ("temp", "hum", "lux", "soil_pct", "uvi", "pm25"))
+                has_data = any(d.get(k) is not None for k in ("temp", "hum", "lux", "uvi", "pm25", "pm10", "pm1"))
                 if has_data:
                     success, res = ts_client.upload(
                         d.get("temp"),
                         d.get("hum"),
                         d.get("lux"),
-                        d.get("soil_pct"),
                         d.get("uvi"),
                         d.get("pm25"),
-                        d.get("pm10")
+                        d.get("pm10"),
+                        d.get("pm1")
                     )
 
                     if success:
@@ -433,12 +422,6 @@ async def main():
     except Exception as e:
         print("[WARN] DS1307 initialization failed:", e)
 
-    # Initialize Soil Moisture Probe (ADC)
-    try:
-        sensors["soil"] = SoilMoisture(config.PIN_SOIL_ADC, config.SOIL_DRY_MV, config.SOIL_WET_MV)
-        print(f"[OK] Soil Moisture Probe ready on GPIO{config.PIN_SOIL_ADC}")
-    except Exception as e:
-        print("[WARN] Soil Moisture initialization failed:", e)
 
     # 6. Network Discovery & NTP Sync
     print("\n[INIT] Probing Network Connectivity...")

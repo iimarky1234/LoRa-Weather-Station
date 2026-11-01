@@ -7,6 +7,7 @@ from machine import Pin, SPI
 import sdcard
 import config
 
+
 class GatewayStorage:
     STORAGE_SD = "sd"
     STORAGE_FLASH = "flash"
@@ -20,7 +21,9 @@ class GatewayStorage:
         self.ring_buffer = []
 
         # CS LoRa pin held HIGH during SD card operations on shared SPI
-        self.cs_lora = Pin(cs_lora_pin, Pin.OUT, value=1) if cs_lora_pin is not None else None
+        self.cs_lora = (
+            Pin(cs_lora_pin, Pin.OUT, value=1) if cs_lora_pin is not None else None
+        )
 
         self._init_storage()
 
@@ -31,11 +34,16 @@ class GatewayStorage:
             if self.cs_lora:
                 self.cs_lora.value(1)
 
-            # Shared SPI 1 (SCK: 18, MOSI: 11, MISO: 13)
-            spi = SPI(1, baudrate=5000000, polarity=0, phase=0,
-                      sck=Pin(config.PIN_LORA_SCK),
-                      mosi=Pin(config.PIN_LORA_MOSI),
-                      miso=Pin(config.PIN_LORA_MISO))
+            # Shared SPI 2 (SCK: 36, MOSI: 37, MISO: 35)
+            spi = SPI(
+                2,
+                baudrate=5000000,
+                polarity=0,
+                phase=0,
+                sck=Pin(config.PIN_SD_CLK),
+                mosi=Pin(config.PIN_SD_MOSI),
+                miso=Pin(config.PIN_SD_MISO),
+            )
 
             sd = sdcard.SDCard(spi, Pin(config.PIN_SD_CS))
             vfs = os.VfsFat(sd)
@@ -52,19 +60,28 @@ class GatewayStorage:
 
         # 2. Fallback to Onboard Internal SPI Flash Memory
         try:
-            flash_path = getattr(config, "FLASH_LOG_FILE_PATH", "/gateway_weather_log.csv")
+            flash_path = getattr(
+                config, "FLASH_LOG_FILE_PATH", "/gateway_weather_log.csv"
+            )
             self.storage_type = self.STORAGE_FLASH
             self.active_log_path = flash_path
-            print(f"[INFO] Using Onboard Flash Memory Fallback ({self.active_log_path})")
+            print(
+                f"[INFO] Using Onboard Flash Memory Fallback ({self.active_log_path})"
+            )
             self._ensure_header()
         except Exception as e:
             self.storage_type = self.STORAGE_RAM
             self.active_log_path = None
-            print(f"[WARN] Flash storage initialization failed ({e}). Operating in RAM buffer only.")
+            print(
+                f"[WARN] Flash storage initialization failed ({e}). Operating in RAM buffer only."
+            )
 
     def is_persistent(self):
         """Returns True if telemetry is written to either MicroSD or Flash."""
-        return self.storage_type in (self.STORAGE_SD, self.STORAGE_FLASH) and self.active_log_path is not None
+        return (
+            self.storage_type in (self.STORAGE_SD, self.STORAGE_FLASH)
+            and self.active_log_path is not None
+        )
 
     def get_storage_label(self):
         """Returns human-readable description of the active storage medium."""
@@ -86,8 +103,12 @@ class GatewayStorage:
                 pass
 
             with open(self.active_log_path, "w") as f:
-                f.write("timestamp,node_id,temperature_c,humidity_pct,light_lux,soil_moisture_pct,uv_index,pm25_ugm3,pm10_ugm3,rssi,snr\n")
-            print(f"[INFO] Created new Gateway CSV log on {self.storage_type.upper()}: {self.active_log_path}")
+                f.write(
+                    "timestamp,node_id,temperature_c,humidity_pct,light_lux,uv_index,pm25_ugm3,pm10_ugm3,pm1_ugm3,rssi,snr\n"
+                )
+            print(
+                f"[INFO] Created new Gateway CSV log on {self.storage_type.upper()}: {self.active_log_path}"
+            )
         except Exception as e:
             print(f"[WARN] Error creating CSV header on {self.storage_type}:", e)
 
@@ -109,12 +130,12 @@ class GatewayStorage:
             data.get("temp", ""),
             data.get("hum", ""),
             data.get("lux", ""),
-            data.get("soil_pct", ""),
             data.get("uvi", ""),
             data.get("pm25", ""),
             data.get("pm10", ""),
+            data.get("pm1", ""),
             record.get("rssi", ""),
-            record.get("snr", "")
+            record.get("snr", ""),
         )
 
         try:
@@ -128,10 +149,14 @@ class GatewayStorage:
             print(f"[WARN] Write error on {self.storage_type}: {e}")
             # If SD failed during runtime, fallback to Flash immediately
             if self.storage_type == self.STORAGE_SD:
-                print("[INFO] Switching active storage from MicroSD to Onboard Flash...")
+                print(
+                    "[INFO] Switching active storage from MicroSD to Onboard Flash..."
+                )
                 self.sd_mounted = False
                 self.storage_type = self.STORAGE_FLASH
-                self.active_log_path = getattr(config, "FLASH_LOG_FILE_PATH", "/gateway_weather_log.csv")
+                self.active_log_path = getattr(
+                    config, "FLASH_LOG_FILE_PATH", "/gateway_weather_log.csv"
+                )
                 self._ensure_header()
                 try:
                     with open(self.active_log_path, "a") as f:

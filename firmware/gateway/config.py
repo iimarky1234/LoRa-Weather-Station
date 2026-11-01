@@ -3,21 +3,26 @@
 # ==============================================================================
 
 # LoRa Radio Transceiver (Ai-Thinker Ra-02 / Semtech SX1278)
-PIN_LORA_SCK  = 18
+PIN_LORA_SCK = 18
 PIN_LORA_MOSI = 11
 PIN_LORA_MISO = 13
-PIN_LORA_CS   = 2
-PIN_LORA_RST  = 3
+PIN_LORA_CS = 2
+PIN_LORA_RST = 3
 PIN_LORA_DIO0 = 6
 
-LORA_FREQ  = 434.0    # 434.0 MHz
-LORA_BW    = 7        # 125 kHz
-LORA_SF    = 9        # Spreading factor 9
-LORA_CR    = 7        # Coding rate 4/7
+PIN_SD_CLK = 36
+PIN_SD_MISO = 37
+PIN_SD_MOSI = 35
+PIN_SD_CS = 4
+
+
+LORA_FREQ = 434.0  # 434.0 MHz
+LORA_BW = 7  # 125 kHz
+LORA_SF = 9  # Spreading factor 9
+LORA_CR = 7  # Coding rate 4/7
 LORA_POWER = 14
 
 # Storage & Logging (MicroSD with Onboard Flash Fallback)
-PIN_SD_CS = 10
 LOG_FILE_PATH = "/sd/gateway_weather_log.csv"
 FLASH_LOG_FILE_PATH = "/gateway_weather_log.csv"
 RING_BUFFER_SIZE = 50
@@ -52,7 +57,7 @@ THINGSPEAK_NODES = {
         "read_key": "WK8Z6FH8W8UTJS7Q",
         "name": "Node 1",
         "lat": 10.841168077294883,
-        "lon": 106.80988926666828
+        "lon": 106.80988926666828,
     },
     2: {
         "channel_id": "3558474",
@@ -60,8 +65,8 @@ THINGSPEAK_NODES = {
         "read_key": "6Y885RXM1MREEGV1",
         "name": "Node 2",
         "lat": 10.840083260390088,
-        "lon": 106.81139950400448
-    }
+        "lon": 106.81139950400448,
+    },
 }
 
 # Status RGB LED

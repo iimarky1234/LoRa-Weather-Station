@@ -112,10 +112,10 @@ tr:hover td { background: #334155; }
     </div>
 
     <div class="card">
-      <div class="card-header"><span>SOIL MOISTURE</span><span>🌱</span></div>
-      <div class="card-val"><span id="valSoil">--</span><span class="card-unit">%</span></div>
-      <div class="card-sub">Calibrated Analog Probe</div>
-      <div class="bar"><div id="barSoil" class="bar-fill" style="background:var(--green);"></div></div>
+      <div class="card-header"><span>PM1.0 ULTRA-FINE</span><span>✨</span></div>
+      <div class="card-val"><span id="valPm1">--</span><span class="card-unit">µg/m³</span></div>
+      <div class="card-sub">Ultra-fine Dust (APM10)</div>
+      <div class="bar"><div id="barPm1" class="bar-fill" style="background:#fb7185;"></div></div>
     </div>
 
     <div class="card">
@@ -162,7 +162,7 @@ tr:hover td { background: #334155; }
             <th>Temp (°C)</th>
             <th>Humidity (%)</th>
             <th>Light (Lux)</th>
-            <th>Soil (%)</th>
+            <th>PM1.0</th>
             <th>UVI</th>
             <th>PM2.5</th>
             <th>PM10</th>
@@ -197,7 +197,7 @@ function renderActiveNode() {
   document.getElementById('valTemp').innerText = d.temp !== null && d.temp !== undefined ? Number(d.temp).toFixed(1) : '--';
   document.getElementById('valHum').innerText = d.hum !== null && d.hum !== undefined ? Number(d.hum).toFixed(0) : '--';
   document.getElementById('valLux').innerText = d.lux !== null && d.lux !== undefined ? Number(d.lux).toFixed(0) : '--';
-  document.getElementById('valSoil').innerText = d.soil_pct !== null && d.soil_pct !== undefined ? Number(d.soil_pct).toFixed(1) : '--';
+  document.getElementById('valPm1').innerText = d.pm1 !== null && d.pm1 !== undefined ? d.pm1 : '--';
   document.getElementById('valUvi').innerText = d.uvi !== null && d.uvi !== undefined ? Number(d.uvi).toFixed(2) : '--';
   document.getElementById('valPm25').innerText = d.pm25 !== null && d.pm25 !== undefined ? d.pm25 : '--';
   document.getElementById('valPm10').innerText = d.pm10 !== null && d.pm10 !== undefined ? d.pm10 : '--';
@@ -208,7 +208,7 @@ function renderActiveNode() {
   document.getElementById('barTemp').style.width = Math.min(100, Math.max(0, ((d.temp || 0) / 50) * 100)) + '%';
   document.getElementById('barHum').style.width = Math.min(100, Math.max(0, d.hum || 0)) + '%';
   document.getElementById('barLux').style.width = Math.min(100, Math.max(0, ((d.lux || 0) / 2000) * 100)) + '%';
-  document.getElementById('barSoil').style.width = Math.min(100, Math.max(0, d.soil_pct || 0)) + '%';
+  document.getElementById('barPm1').style.width = Math.min(100, Math.max(0, ((d.pm1 || 0) / 150) * 100)) + '%';
   document.getElementById('barUvi').style.width = Math.min(100, Math.max(0, ((d.uvi || 0) / 12) * 100)) + '%';
   document.getElementById('barPm25').style.width = Math.min(100, Math.max(0, ((d.pm25 || 0) / 150) * 100)) + '%';
   document.getElementById('barPm10').style.width = Math.min(100, Math.max(0, ((d.pm10 || 0) / 250) * 100)) + '%';
@@ -280,7 +280,7 @@ async function fetchHistory() {
         <td>${dt.temp !== undefined && dt.temp !== null ? dt.temp : '--'}</td>
         <td>${dt.hum !== undefined && dt.hum !== null ? dt.hum + '%' : '--'}</td>
         <td>${dt.lux !== undefined && dt.lux !== null ? dt.lux : '--'}</td>
-        <td>${dt.soil_pct !== undefined && dt.soil_pct !== null ? dt.soil_pct + '%' : '--'}</td>
+        <td>${dt.pm1 !== undefined && dt.pm1 !== null ? dt.pm1 : '--'}</td>
         <td>${dt.uvi !== undefined && dt.uvi !== null ? dt.uvi : '--'}</td>
         <td>${dt.pm25 !== undefined && dt.pm25 !== null ? dt.pm25 : '--'}</td>
         <td>${dt.pm10 !== undefined && dt.pm10 !== null ? dt.pm10 : '--'}</td>
@@ -318,10 +318,11 @@ class GatewayWebServer:
             "temp": None,
             "hum": None,
             "lux": None,
-            "soil_pct": None,
             "uvi": None,
             "pm25": None,
             "pm10": None,
+            "pm1": None,
+            "has_new_data": False,
             "sd_mounted": self.storage_mgr.sd_mounted,
             "storage_type": self.storage_mgr.storage_type,
             "storage_label": self.storage_mgr.get_storage_label(),
@@ -339,10 +340,11 @@ class GatewayWebServer:
             "temp": data.get("temp"),
             "hum": data.get("hum"),
             "lux": data.get("lux"),
-            "soil_pct": data.get("soil_pct"),
             "uvi": data.get("uvi"),
             "pm25": data.get("pm25"),
             "pm10": data.get("pm10"),
+            "pm1": data.get("pm1"),
+            "has_new_data": True,
             "sd_mounted": self.storage_mgr.sd_mounted,
             "storage_type": self.storage_mgr.storage_type,
             "storage_label": self.storage_mgr.get_storage_label(),

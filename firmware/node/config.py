@@ -6,15 +6,16 @@
 NODE_ID = 1
 TX_INTERVAL_SEC = 20  # Telemetry transmission interval (seconds)
 
-# I2C Sensor Bus (Shared among DS1307, BH1750, LTR390, AM2301B, APM10)
+# I2C Sensor Bus (Shared among DS1307, BH1750, LTR390, AM2301B)
 PIN_I2C_SDA = 8
 PIN_I2C_SCL = 9
 I2C_FREQ = 100000
 
-# Dedicated Analog Sensor
-PIN_SOIL_ADC = 14
-SOIL_DRY_MV = 1200
-SOIL_WET_MV = 3100
+# APM10 Laser Particulate Matter Sensor (UART)
+UART_ID_APM10 = 1
+PIN_APM10_TX = 10     # ESP32 TX -> TXS0108E A1 -> B1 -> APM10 RX
+PIN_APM10_RX = 14     # APM10 TX -> TXS0108E B2 -> A2 -> ESP32 RX
+APM10_BAUDRATE = 1200
 
 # Ai-Thinker Ra-02 / MKE-M23 LoRa Module (Semtech SX1278)
 PIN_LORA_SCK  = 18

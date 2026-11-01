@@ -86,7 +86,7 @@ class StandaloneStorage:
                 pass
 
             with open(self.active_log_path, "w") as f:
-                f.write("timestamp,node_id,temperature_c,humidity_pct,light_lux,soil_moisture_pct,uv_index,pm25_ugm3,pm10_ugm3,rssi,snr\n")
+                f.write("timestamp,node_id,temperature_c,humidity_pct,light_lux,uv_index,pm25_ugm3,pm10_ugm3,pm1_ugm3,rssi,snr\n")
             print(f"[INFO] Created new Weather CSV log on {self.storage_type.upper()}: {self.active_log_path}")
         except Exception as e:
             print(f"[WARN] Error creating CSV header on {self.storage_type}:", e)
@@ -109,10 +109,10 @@ class StandaloneStorage:
             data.get("temp", ""),
             data.get("hum", ""),
             data.get("lux", ""),
-            data.get("soil_pct", ""),
             data.get("uvi", ""),
             data.get("pm25", ""),
             data.get("pm10", ""),
+            data.get("pm1", ""),
             record.get("rssi", "Local"),
             record.get("snr", "Local")
         )

@@ -1032,16 +1032,11 @@ const SENSOR_PRESETS = {
   rain_rate: { label: "Rain Rate", unit: "mm/h", icon: "🌧️", color: "#38bdf8", min: 0, max: 100, decimals: 1 },
   wind_speed: { label: "Wind Speed", unit: "m/s", icon: "💨", color: "#0ea5e9", min: 0, max: 40, decimals: 1 },
 
-  // Soil & Agriculture
-  soil_pct: { label: "Soil Moisture", unit: "%", icon: "🌱", color: "#22c55e", min: 0, max: 100, decimals: 1 },
-  soil_temp: { label: "Soil Temp", unit: "°C", icon: "🌾", color: "#10b981", min: 0, max: 50, decimals: 1 },
-  soil_ec: { label: "Soil EC", unit: "µS/cm", icon: "⚡", color: "#84cc16", min: 0, max: 2000, decimals: 0 },
-  soil_ph: { label: "Soil pH", unit: "pH", icon: "🧪", color: "#a3e635", min: 3, max: 10, decimals: 2 },
-
   // Environment & Air Quality
   uvi: { label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
   pm25: { label: "PM2.5 Dust", unit: "µg/m³", icon: "💨", color: "#ef4444", min: 0, max: 150, decimals: 0 },
   pm10: { label: "PM10 Coarse", unit: "µg/m³", icon: "🌫️", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
+  pm1: { label: "PM1.0 Fine", unit: "µg/m³", icon: "✨", color: "#fb7185", min: 0, max: 150, decimals: 0 },
   co2: { label: "CO2 Gas", unit: "ppm", icon: "☁️", color: "#fb923c", min: 400, max: 2500, decimals: 0 },
 
   // Hydrology & Water
@@ -1077,10 +1072,10 @@ const DEFAULT_CONFIG = {
         { field: "field1", label: "Temperature", unit: "°C", icon: "🌡️", color: "#f97316", min: 0, max: 50, decimals: 1 },
         { field: "field2", label: "Humidity", unit: "%", icon: "💧", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
         { field: "field3", label: "Ambient Light", unit: "Lux", icon: "☀️", color: "#eab308", min: 0, max: 2000, decimals: 0 },
-        { field: "field4", label: "Soil Moisture", unit: "%", icon: "🌱", color: "#22c55e", min: 0, max: 100, decimals: 1 },
-        { field: "field5", label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
-        { field: "field6", label: "PM2.5 Dust", unit: "µg/m³", icon: "💨", color: "#ef4444", min: 0, max: 150, decimals: 0 },
-        { field: "field7", label: "PM10 Coarse", unit: "µg/m³", icon: "🌫️", color: "#f43f5e", min: 0, max: 250, decimals: 0 }
+        { field: "field4", label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
+        { field: "field5", label: "PM2.5 Dust", unit: "µg/m³", icon: "💨", color: "#ef4444", min: 0, max: 150, decimals: 0 },
+        { field: "field6", label: "PM10 Coarse", unit: "µg/m³", icon: "🌫️", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
+        { field: "field7", label: "PM1.0 Fine", unit: "µg/m³", icon: "✨", color: "#fb7185", min: 0, max: 150, decimals: 0 }
       ]
     },
     {
@@ -1095,10 +1090,10 @@ const DEFAULT_CONFIG = {
         { field: "field1", label: "Temperature", unit: "°C", icon: "🌡️", color: "#f97316", min: 0, max: 50, decimals: 1 },
         { field: "field2", label: "Humidity", unit: "%", icon: "💧", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
         { field: "field3", label: "Ambient Light", unit: "Lux", icon: "☀️", color: "#eab308", min: 0, max: 2000, decimals: 0 },
-        { field: "field4", label: "Soil Moisture", unit: "%", icon: "🌱", color: "#22c55e", min: 0, max: 100, decimals: 1 },
-        { field: "field5", label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
-        { field: "field6", label: "PM2.5 Dust", unit: "µg/m³", icon: "💨", color: "#ef4444", min: 0, max: 150, decimals: 0 },
-        { field: "field7", label: "PM10 Coarse", unit: "µg/m³", icon: "🌫️", color: "#f43f5e", min: 0, max: 250, decimals: 0 }
+        { field: "field4", label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
+        { field: "field5", label: "PM2.5 Dust", unit: "µg/m³", icon: "💨", color: "#ef4444", min: 0, max: 150, decimals: 0 },
+        { field: "field6", label: "PM10 Coarse", unit: "µg/m³", icon: "🌫️", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
+        { field: "field7", label: "PM1.0 Fine", unit: "µg/m³", icon: "✨", color: "#fb7185", min: 0, max: 150, decimals: 0 }
       ]
     }
   ]
