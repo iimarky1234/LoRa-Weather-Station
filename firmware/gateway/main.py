@@ -128,8 +128,11 @@ async def lora_receiver_task(lora, storage_mgr, web_server, led):
                 if packet:
                     led.flash_blue(100)  # Blue flash on packet RX
                     dt = packet.get("data", {})
+                    rep_id = packet.get("repeater_id", 0)
+                    hops = packet.get("hops", 0)
+                    route_info = f"via Repeater #{rep_id} (Hops: {hops})" if rep_id > 0 else "Direct"
                     print(
-                        f"\n[LORA RX] {packet.get('time')} Node #{packet.get('node_id')} (Seq #{packet.get('seq')}, RSSI: {rssi}dBm, SNR: {snr:.1f}dB)"
+                        f"\n[LORA RX] {packet.get('time')} Node #{packet.get('node_id')} [{route_info}] (Seq #{packet.get('seq')}, RSSI: {rssi}dBm, SNR: {snr:.1f}dB)"
                     )
                     print(
                         f"          Temp: {dt.get('temp')}°C | Hum: {dt.get('hum')}% | Lux: {dt.get('lux')} | UVI: {dt.get('uvi')} | PM1.0: {dt.get('pm1')} | PM2.5: {dt.get('pm25')} | PM10: {dt.get('pm10')}"

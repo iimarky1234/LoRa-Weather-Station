@@ -283,3 +283,28 @@ class SX1278:
         """Puts SX1278 into ultra-low-power sleep mode (~0.2 uA)."""
         self._write_reg(self.REG_OP_MODE, self.MODE_LONG_RANGE_MODE | self.MODE_SLEEP)
 
+    def is_channel_busy(self, timeout_ms=500):
+        """
+        Executes LoRa Channel Activity Detection (CAD).
+        Returns True if a LoRa chirp is detected on the channel (channel busy),
+        False if channel is clear (ready to transmit).
+        """
+        self._write_reg(self.REG_OP_MODE, self.MODE_LONG_RANGE_MODE | self.MODE_STDBY)
+        self._write_reg(self.REG_IRQ_FLAGS, 0xFF)  # Clear all IRQs
+        self._write_reg(self.REG_OP_MODE, self.MODE_LONG_RANGE_MODE | self.MODE_CAD)
+
+        start = time.ticks_ms()
+        while time.ticks_diff(time.ticks_ms(), start) < timeout_ms:
+            irq = self._read_reg(self.REG_IRQ_FLAGS)
+            if irq & self.IRQ_CAD_DONE_MASK:
+                busy = bool(irq & self.IRQ_CAD_DETECTED_MASK)
+                self._write_reg(self.REG_IRQ_FLAGS, 0xFF)
+                self._write_reg(self.REG_OP_MODE, self.MODE_LONG_RANGE_MODE | self.MODE_STDBY)
+                return busy
+            time.sleep_ms(10)
+
+        # Timeout -> Put back in Standby
+        self._write_reg(self.REG_OP_MODE, self.MODE_LONG_RANGE_MODE | self.MODE_STDBY)
+        return False
+
+

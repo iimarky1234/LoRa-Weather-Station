@@ -1,6 +1,7 @@
 # ==============================================================================
 # LoRa Weather Station Communication Protocol
 # Optimized 20-Byte Binary & JSON packet serialization, deserialization, and validation
+# Supports Mesh/Repeater Nibble Routing (Byte 3: 4-bit Repeater ID + 4-bit Hop Count)
 # ==============================================================================
 try:
     import ustruct as struct
@@ -14,7 +15,7 @@ class WeatherPacket:
     # < = Little Endian
     # B: node_id (uint8, 1B)
     # H: seq (uint16, 2B)
-    # B: hops (uint8, 1B)
+    # B: byte_3 = (repeater_id << 4) | (hops & 0x0F) (uint8, 1B)
     # h: temp * 100 (int16 signed, 2B)
     # H: hum * 100 (uint16, 2B)
     # H: lux (uint16, 2B)
@@ -28,13 +29,14 @@ class WeatherPacket:
     BINARY_SIZE = 20
 
     @staticmethod
-    def create(node_id, seq, timestamp, temp, hum, lux, uv_raw=0, uvi=0.0, pm25=0, pm10=0, pm1=0, hops=0):
+    def create(node_id, seq, timestamp, temp, hum, lux, uv_raw=0, uvi=0.0, pm25=0, pm10=0, pm1=0, hops=0, repeater_id=0):
         """
         Builds a structured telemetry packet dict ready for LoRa transmission.
         """
         return {
             "node_id": int(node_id),
             "seq": int(seq),
+            "repeater_id": int(repeater_id),
             "hops": int(hops),
             "time": str(timestamp),
             "data": {
@@ -54,6 +56,7 @@ class WeatherPacket:
         """
         Encodes packet dict.
         Default is ultra-compact 20-byte binary packet.
+        Byte 3 encodes: upper 4 bits = repeater_id, lower 4 bits = hops.
         Set binary=False for legacy JSON.
         """
         try:
@@ -77,11 +80,15 @@ class WeatherPacket:
                 pm25_val = int(min(max(int(p25) if p25 is not None else 0, 0), 65535))
                 pm10_val = int(min(max(int(p10) if p10 is not None else 0, 0), 65535))
 
+                rep_id = int(packet_dict.get("repeater_id", 0)) & 0x0F
+                hop_cnt = int(packet_dict.get("hops", 0)) & 0x0F
+                byte_3 = (rep_id << 4) | hop_cnt
+
                 return struct.pack(
                     cls.BINARY_FMT,
                     int(packet_dict.get("node_id", 1)) & 0xFF,
                     int(packet_dict.get("seq", 0)) & 0xFFFF,
-                    int(packet_dict.get("hops", 0)) & 0xFF,
+                    byte_3,
                     t_raw,
                     h_raw,
                     lux_val,
@@ -102,6 +109,7 @@ class WeatherPacket:
         """
         Decodes raw bytes into packet dict.
         Automatically handles both 20-byte binary packets and JSON strings.
+        Extracts repeater_id and hops from nibble Byte 3.
         """
         try:
             if not raw_bytes:
@@ -111,9 +119,12 @@ class WeatherPacket:
 
             # Auto-detect 20-byte binary packet
             if len(raw_bytes) == cls.BINARY_SIZE and not raw_bytes.startswith(b'{'):
-                node_id, seq, hops, t_raw, h_raw, lux, uv_raw, uvi_raw, pm1, pm25, pm10 = struct.unpack(
+                node_id, seq, byte_3, t_raw, h_raw, lux, uv_raw, uvi_raw, pm1, pm25, pm10 = struct.unpack(
                     cls.BINARY_FMT, raw_bytes
                 )
+                rep_id = (byte_3 >> 4) & 0x0F
+                hops = byte_3 & 0x0F
+
                 try:
                     now = time.localtime()
                     timestamp = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*now[:6])
@@ -123,7 +134,8 @@ class WeatherPacket:
                 return {
                     "node_id": int(node_id),
                     "seq": int(seq),
-                    "hops": int(hops),
+                    "repeater_id": rep_id,
+                    "hops": hops,
                     "time": timestamp,
                     "data": {
                         "temp": round(t_raw / 100.0, 2),
@@ -141,6 +153,10 @@ class WeatherPacket:
             text = raw_bytes.decode('utf-8')
             obj = json.loads(text)
             if "node_id" in obj and "data" in obj:
+                if "repeater_id" not in obj:
+                    obj["repeater_id"] = 0
+                if "hops" not in obj:
+                    obj["hops"] = 0
                 return obj
             return None
         except Exception as e:

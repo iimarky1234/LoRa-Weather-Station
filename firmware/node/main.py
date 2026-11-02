@@ -1,9 +1,11 @@
 # ==============================================================================
 # Weather Station Node Main Application
 # Samples all sensors and transmits telemetry packets over 434 MHz LoRa (SX1278)
-# Supports Ultra-Low-Power Deep Sleep Mode with RTC Memory Sequence Persistence
+# Supports Ultra-Low-Power Deep Sleep Mode with Epoch-Minute Sequence Persistence
+# and Listen-Before-Talk (LBT / CAD) Collision Avoidance
 # ==============================================================================
 import time
+import random
 import machine
 try:
     import ustruct as struct
@@ -25,40 +27,39 @@ from drivers.ds1307 import DS1307
 from drivers.apm10 import APM10
 
 
-def get_seq_counter():
-    """Retrieves monotonic sequence number preserved across Deep Sleep cycles in RTC memory."""
+def compute_epoch_minutes_seq(rtc_driver):
+    """
+    Computes sequence number using Epoch Minutes:
+    (int(time.time()) // 60) & 0xFFFF
+    Guarantees monotonic advancement with real-world time across power loss and resets.
+    Rolls over once every 45.5 days (65,536 minutes).
+    """
     try:
-        mem = RTC().memory()
-        if len(mem) >= 2:
-            return struct.unpack("<H", mem[:2])[0]
+        t = rtc_driver.get_time()  # (year, month, day, hour, minute, second)
+        if t:
+            # Sync ESP32 internal clock so time.time() matches DS1307
+            RTC().datetime((t[0], t[1], t[2], 0, t[3], t[4], t[5], 0))
     except Exception:
         pass
-    return 0
 
-
-def save_seq_counter(seq):
-    """Saves sequence number into ESP32 RTC persistent memory."""
     try:
-        RTC().memory(struct.pack("<H", seq & 0xFFFF))
+        epoch_mins = (int(time.time()) // 60) & 0xFFFF
+        return epoch_mins
     except Exception:
-        pass
+        # Fallback to RTC memory if time.time() fails
+        try:
+            mem = RTC().memory()
+            if len(mem) >= 2:
+                return struct.unpack("<H", mem[:2])[0]
+        except Exception:
+            pass
+        return 0
 
 
 def main():
     print("=" * 66)
     print(f"      ESP32-S3 LORA WEATHER STATION - NODE #{config.NODE_ID}      ")
     print("=" * 66)
-
-    # Power & Wake Cause Verification
-    reset_cause = machine.reset_cause()
-    is_deepsleep = reset_cause == machine.DEEPSLEEP_RESET
-    seq_counter = get_seq_counter() if is_deepsleep else 0
-
-    if is_deepsleep:
-        print(f"[PWR] Woke up from Deep Sleep! Resuming at Sequence #{seq_counter}")
-    else:
-        print(f"[PWR] Cold Boot / Power-On Reset. Initializing at Sequence #{seq_counter}")
-        save_seq_counter(seq_counter)
 
     # 1. Initialize Built-in Status LED
     led = StatusLED(config.PIN_RGB_LED_PRIMARY, config.PIN_RGB_LED_SECONDARY, config.LED_BRIGHTNESS)
@@ -91,7 +92,16 @@ def main():
         f"  * APM10 PM Dust:    {'[ONLINE]' if apm.is_connected() else '[OFFLINE]'} (UART{config.UART_ID_APM10} TX:{config.PIN_APM10_TX}, RX:{config.PIN_APM10_RX})"
     )
 
-    # 4. Initialize SX1278 (Ra-02) LoRa Transceiver
+    # 4. Power & Sequence Number Initialization (Epoch Minutes)
+    seq_counter = compute_epoch_minutes_seq(rtc)
+    reset_cause = machine.reset_cause()
+    is_deepsleep = reset_cause == machine.DEEPSLEEP_RESET
+    if is_deepsleep:
+        print(f"[PWR] Woke up from Deep Sleep! Epoch-Minute Sequence #{seq_counter}")
+    else:
+        print(f"[PWR] Power-On / Hard Reset. Initialized Epoch-Minute Sequence #{seq_counter}")
+
+    # 5. Initialize SX1278 (Ra-02) LoRa Transceiver
     print(
         f"\n[INIT] Initializing SX1278 LoRa (SCK:{config.PIN_LORA_SCK}, CS:{config.PIN_LORA_CS}, RST:{config.PIN_LORA_RST})..."
     )
@@ -119,7 +129,9 @@ def main():
     else:
         led.set_green()
 
-    print(f"\n[START] Starting telemetry broadcast (Interval: {config.TX_INTERVAL_SEC}s, DeepSleep: {getattr(config, 'ENABLE_DEEP_SLEEP', False)})...")
+    print(
+        f"\n[START] Starting telemetry broadcast (Interval: {config.TX_INTERVAL_SEC}s, DeepSleep: {getattr(config, 'ENABLE_DEEP_SLEEP', False)}, LBT: {getattr(config, 'LBT_CAD_ENABLED', False)})..."
+    )
 
     while True:
         try:
@@ -136,7 +148,7 @@ def main():
                 f"[{timestamp}] Node #{config.NODE_ID} | Temp: {temp}°C | Hum: {hum}% | Lux: {lux} | UVI: {uvi} | PM1.0: {pm1_0} | PM2.5: {pm2_5} | PM10: {pm10}"
             )
 
-            # Assemble packet
+            # Assemble packet (Originating from Node: repeater_id=0, hops=0)
             pkt = WeatherPacket.create(
                 node_id=config.NODE_ID,
                 seq=seq_counter,
@@ -150,13 +162,24 @@ def main():
                 pm10=pm10 if pm10 is not None else 0,
                 pm1=pm1_0 if pm1_0 is not None else 0,
                 hops=0,
+                repeater_id=0,
             )
 
             # Encode as compact 20-byte binary packet
             raw_bytes = WeatherPacket.encode(pkt)
 
-            # Transmit via LoRa
+            # Transmit via LoRa with Listen-Before-Talk (LBT)
             if lora_ok and raw_bytes:
+                # LBT CAD Check
+                if getattr(config, "LBT_CAD_ENABLED", False):
+                    for attempt in range(3):
+                        if lora.is_channel_busy(timeout_ms=300):
+                            backoff = random.randint(500, 1500)
+                            print(f"  -> [LBT] Channel busy! Backing off {backoff}ms...")
+                            time.sleep_ms(backoff)
+                        else:
+                            break
+
                 led.flash_blue(100)  # Blue flash on transmit
                 success = lora.send(raw_bytes, timeout_ms=30000)
                 if success:
@@ -167,10 +190,6 @@ def main():
                     led.set_red()
             else:
                 led.set_red()
-
-            # Increment sequence counter and persist to RTC memory
-            next_seq = (seq_counter + 1) % 65536
-            save_seq_counter(next_seq)
 
             # Sleep Management
             if getattr(config, "ENABLE_DEEP_SLEEP", False):
@@ -185,7 +204,7 @@ def main():
                 time.sleep_ms(100)  # Flush UART TX buffer
                 machine.deepsleep(config.TX_INTERVAL_SEC * 1000)
             else:
-                seq_counter = next_seq
+                seq_counter = compute_epoch_minutes_seq(rtc)
                 time.sleep(config.TX_INTERVAL_SEC)
 
         except Exception as e:

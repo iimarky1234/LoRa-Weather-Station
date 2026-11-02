@@ -4,7 +4,8 @@
 
 # Node Identification
 NODE_ID = 1
-TX_INTERVAL_SEC = 60  # Telemetry transmission interval (seconds) - elevated to provide quiet airtime for SF12 ToA (~17.6s)
+TX_INTERVAL_SEC = 120  # Telemetry transmission interval (seconds) - 120s keeps 10.5s airtime < 5% channel duty
+LBT_CAD_ENABLED = True  # Listen-Before-Talk (Channel Activity Detection) before transmitting
 
 # I2C Sensor Bus (Shared among DS1307, BH1750, LTR390, AM2301B)
 PIN_I2C_SDA = 8
