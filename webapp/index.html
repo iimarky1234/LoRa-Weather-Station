@@ -2,74 +2,74 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-<meta name="theme-color" content="#0f172a">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0284c7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="WeatherStation">
+<meta name="apple-mobile-web-app-title" content="LoRa Weather">
+<meta name="description" content="ESP32 LoRa Weather Station Real-Time Telemetry Dashboard">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>ESP32 LoRa Weather Station - Node 1</title>
 
-<!-- Leaflet.js Dark Mode Map -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<!-- Leaflet CSS for Dark Basemaps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-<title>LoRa Weather Station - Multi-Node Cloud Dashboard</title>
+<!-- Google Material Symbols Icons -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
 <style>
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+  display: inline-block;
+}
+
 :root {
   --bg: #0f172a;
   --card: #1e293b;
   --text: #f8fafc;
   --subtext: #94a3b8;
   --accent: #38bdf8;
-  --border: #334155;
   --green: #22c55e;
   --yellow: #eab308;
-  --red: #ef4444;
-  --orange: #f97316;
-  --cyan: #06b6d4;
   --purple: #a855f7;
+  --border: #334155;
   --indigo: #6366f1;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   padding: 16px;
   min-height: 100vh;
 }
 
-.container {
-  max-width: 1040px;
-  margin: 0 auto;
-}
+.container { max-width: 1080px; margin: 0 auto; }
 
 header {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 14px;
-  margin-bottom: 18px;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
 h1 {
-  font-size: 1.45rem;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--accent);
   display: flex;
   align-items: center;
-  gap: 8px;
-  letter-spacing: -0.02em;
+  gap: 10px;
 }
 
 .badge-group {
@@ -79,67 +79,56 @@ h1 {
 }
 
 .badge {
-  background: #0369a1;
-  color: #e0f2fe;
-  padding: 3px 8px;
-  border-radius: 6px;
   font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.badge-cloud {
-  background: #4338ca;
-  color: #e0e7ff;
-}
+.badge-cloud { background: #0369a1; color: #e0f2fe; }
+.badge-node  { background: #1e3a8a; color: #93c5fd; }
 
 .status-pill {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  background: #064e3b;
-  color: #a7f3d0;
-  padding: 5px 12px;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
   border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  transition: all 0.3s;
+  font-size: 0.85rem;
+  color: var(--subtext);
 }
-
-.status-pill.online { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
-.status-pill.offline { background: #450a0a; color: #fecaca; border: 1px solid #dc2626; }
-.status-pill.paused { background: #451a03; color: #fed7aa; border: 1px solid #d97706; }
-.status-pill.syncing { background: #0f172a; color: #38bdf8; border: 1px solid #0284c7; }
-.status-pill.error { background: #450a0a; color: #fecaca; border: 1px solid #dc2626; }
 
 .dot {
-  width: 8px;
-  height: 8px;
-  background: var(--green);
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  animation: pulse 2s infinite;
+  background: #64748b;
 }
-.dot.online { background: var(--green); animation: pulse 2s infinite; }
-.dot.offline { background: var(--red); animation: none; }
-.dot.paused { background: var(--yellow); animation: none; }
-.dot.syncing { background: var(--accent); animation: pulse 0.8s infinite; }
-.dot.error { background: var(--red); animation: none; }
+
+.dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.dot.syncing { background: var(--yellow); animation: pulse 1s infinite; }
+.dot.offline { background: #ef4444; }
 
 @keyframes pulse {
-  0% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.3; transform: scale(0.85); }
-  100% { opacity: 1; transform: scale(1); }
+  0% { transform: scale(0.95); opacity: 0.6; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.6; }
 }
 
 /* ==============================================================================
-   MAP CONTAINER & CONTROLS
+   MAP SECTION
    ============================================================================== */
 .map-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 12px;
-  margin-bottom: 18px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  padding: 14px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
 .map-header {
@@ -162,390 +151,291 @@ h1 {
 
 .map-legend {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  gap: 14px;
   font-size: 0.75rem;
   color: var(--subtext);
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
 
 #map {
+  height: 320px;
   width: 100%;
-  height: 310px;
   border-radius: 10px;
-  border: 1px solid var(--border);
+  border: 1px solid #334155;
   background: #0b1120;
-  z-index: 1;
 }
 
-/* CSS Dark Filter for OpenStreetMap fallback */
 .dark-mode-filtered .leaflet-tile {
   filter: brightness(0.65) invert(1) contrast(3) hue-rotate(200deg) saturate(0.35);
 }
 
-/* Custom Marker Styling */
-.custom-div-icon {
-  background: transparent;
-  border: none;
-}
-
+.custom-div-icon { background: transparent; border: none; }
 .marker-pin {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
-  background: #0369a1;
-  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  background: var(--accent);
+  position: absolute;
+  transform: rotate(-45deg);
+  left: 50%;
+  top: 50%;
+  margin: -17px 0 0 -17px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 0.72rem;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-weight: bold;
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
 }
 
-.marker-pin:hover {
-  transform: scale(1.15);
-  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.6);
+.marker-pin::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  margin: 6px 0 0 6px;
+  background: #fff;
+  position: absolute;
+  border-radius: 50%;
 }
 
 .marker-pin.active {
-  background: #facc15 !important;
-  color: #0f172a !important;
-  border-color: #0f172a !important;
-  transform: scale(1.22);
-  box-shadow: 0 0 16px rgba(250, 204, 21, 0.8);
+  box-shadow: 0 0 0 4px #facc15, 0 4px 10px rgba(0,0,0,0.6);
+  transform: rotate(-45deg) scale(1.1);
+  z-index: 100;
 }
 
-.marker-pin.pin-offline {
-  border-color: #ef4444;
-  opacity: 0.75;
-}
+.marker-pin.pin-online { border: 2px solid #22c55e; }
+.marker-pin.pin-offline { border: 2px solid #ef4444; }
 
-.marker-pin.pin-online {
-  border-color: #22c55e;
-}
-
-/* Leaflet Popup Card */
 .leaflet-popup-content-wrapper {
   background: #1e293b !important;
   color: #f8fafc !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid #475569 !important;
+  border-radius: 10px !important;
+  padding: 4px;
 }
-.leaflet-popup-tip {
-  background: #1e293b !important;
-  border: 1px solid var(--border) !important;
-}
+.leaflet-popup-tip { background: #1e293b !important; }
 
-.popup-node-card {
-  min-width: 210px;
-}
+.popup-node-card { min-width: 200px; padding: 4px; }
 .popup-title {
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--accent);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 }
 .popup-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px 8px;
-  margin: 6px 0;
-  font-size: 0.72rem;
-}
-.popup-item span { color: var(--subtext); }
-.popup-item strong { color: #f8fafc; font-weight: 600; }
-.btn-popup-select {
-  display: block;
-  width: 100%;
+  gap: 6px;
+  font-size: 0.75rem;
   margin-top: 6px;
-  background: #0284c7;
-  color: #fff;
-  border: none;
-  padding: 4px 8px;
+}
+.popup-item {
+  background: #0f172a;
+  padding: 4px 6px;
   border-radius: 6px;
-  font-size: 0.74rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
+  border: 1px solid #334155;
 }
-.btn-popup-select:hover { background: #0369a1; }
-
-/* Location Picker Banner */
-.map-picker-banner {
-  background: #0369a1;
-  color: #f0f9ff;
-  border: 1px solid #38bdf8;
-  border-radius: 10px;
-  padding: 10px 16px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 0.82rem;
-  box-shadow: 0 4px 14px rgba(3, 105, 161, 0.4);
-}
+.popup-item span { color: var(--subtext); display: block; font-size: 0.65rem; }
 
 /* ==============================================================================
-   NODE TABS BAR
+   NODE BADGE & TOP TOOLBAR
    ============================================================================== */
 .node-tabs-bar {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.node-tab-btn {
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--subtext);
-  padding: 8px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
+.node-badge-card {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.node-tab-btn:hover {
-  border-color: var(--accent);
-  color: var(--text);
-}
-
-.node-tab-btn.active {
-  background: #0369a1;
-  border-color: var(--accent);
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
-}
-
-.tab-badge {
-  font-size: 0.68rem;
-  background: rgba(0, 0, 0, 0.35);
-  padding: 2px 6px;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  font-weight: 500;
+  padding: 8px 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.tab-badge.online {
-  background: #064e3b;
-  color: #a7f3d0;
-  border: 1px solid #059669;
+.tab-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #64748b;
+  flex-shrink: 0;
+}
+.tab-indicator.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.tab-indicator.offline { background: #ef4444; }
+
+.node-title-group h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.node-title-group span {
+  font-size: 0.75rem;
+  color: var(--subtext);
 }
 
-.tab-badge.offline {
-  background: #450a0a;
-  color: #fecaca;
-  border: 1px solid #dc2626;
-}
-
-/* Actions Toolbar */
 .actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .btn {
-  background: #2563eb;
-  color: #fff;
-  border: none;
   padding: 8px 14px;
   border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.82rem;
+  border: 1px solid transparent;
   font-weight: 600;
-  text-decoration: none;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
 }
-.btn:hover { background: #1d4ed8; }
-.btn-green { background: #059669; }
-.btn-green:hover { background: #047857; }
-.btn-red { background: #dc2626; }
-.btn-red:hover { background: #b91c1c; }
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-.btn-outline:hover {
-  background: var(--card);
-  border-color: var(--subtext);
-}
-.btn-install {
-  background: #4338ca;
-  color: #fff;
-  display: none;
-}
-.btn-install:hover { background: #3730a3; }
 
-/* Offline Notification Banner */
+.btn-primary { background: #0284c7; color: #fff; }
+.btn-primary:hover { background: #0369a1; }
+.btn-outline { background: var(--card); border-color: var(--border); color: var(--text); }
+.btn-outline:hover { background: #334155; }
+.btn-install { background: #10b981; color: #fff; display: none; }
+.btn-install:hover { background: #059669; }
+
+/* Offline Warning Banner */
 .offline-banner {
-  background: #450a0a;
-  color: #fecaca;
-  border: 1px solid #dc2626;
-  border-radius: 10px;
-  padding: 10px 14px;
-  margin-bottom: 14px;
+  background: #7f1d1d;
+  color: #fca5a5;
+  border: 1px solid #b91c1c;
+  padding: 8px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
   font-size: 0.82rem;
   display: none;
-  align-items: center;
-  gap: 8px;
 }
-.offline-banner.visible {
-  display: flex;
-}
-.grid.node-offline {
-  opacity: 0.7;
-}
+.offline-banner.visible { display: flex; align-items: center; gap: 8px; }
 
 /* ==============================================================================
-   TELEMETRY CARDS GRID
+   METRIC TELEMETRY GRID
    ============================================================================== */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
   position: relative;
-  transition: transform 0.2s, border-color 0.2s;
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
-.card:hover {
-  transform: translateY(-2px);
-  border-color: #475569;
-}
+.card:hover { transform: translateY(-2px); border-color: #475569; }
 
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: 0.78rem;
   color: var(--subtext);
-  margin-bottom: 6px;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .card-val {
-  font-size: 1.85rem;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 2px;
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 10px 0;
   display: flex;
   align-items: baseline;
   gap: 4px;
 }
 
-.card-unit {
-  font-size: 0.9rem;
-  color: var(--subtext);
-  font-weight: 400;
-}
-
+.card-unit { font-size: 0.85rem; font-weight: normal; color: var(--subtext); }
 .card-sub {
   font-size: 0.72rem;
   color: var(--subtext);
-  margin-top: 4px;
+  margin-top: 2px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.pill-badge {
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.65rem;
+}
+
 .bar {
-  width: 100%;
-  height: 5px;
+  height: 4px;
   background: #334155;
-  border-radius: 3px;
+  border-radius: 2px;
   margin-top: 10px;
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  width: 0%;
-  border-radius: 3px;
-  transition: width 0.5s ease-out;
+  border-radius: 2px;
+  transition: width 0.4s ease;
 }
 
-.pill-badge {
-  font-size: 0.68rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-/* Status Box */
+/* ==============================================================================
+   STATUS BOX & CHARTS
+   ============================================================================== */
 .status-box {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  font-size: 0.82rem;
+  padding: 14px;
+  margin-bottom: 20px;
   display: flex;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
-}
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  gap: 12px;
+  font-size: 0.82rem;
 }
 
-/* ==============================================================================
-   CHARTS & TABLES
-   ============================================================================== */
+.status-item { display: flex; align-items: center; gap: 6px; }
+
 .chart-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 20px;
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .chart-toggle-group {
@@ -555,48 +445,42 @@ h1 {
 }
 
 .btn-chart {
-  background: #0f172a;
-  border: 1px solid var(--border);
-  color: var(--subtext);
-  padding: 4px 9px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
   border-radius: 6px;
-  font-size: 0.74rem;
+  border: 1px solid var(--border);
+  background: #0f172a;
+  color: var(--subtext);
   cursor: pointer;
-  transition: all 0.2s;
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 .btn-chart.active {
-  border-color: currentColor;
-  color: #fff;
-  font-weight: 600;
+  background: #1e3a8a;
+  border-color: var(--accent);
 }
 
-canvas#telemetryChart {
-  width: 100% !important;
-  height: 240px !important;
-  display: block;
-}
-
+/* ==============================================================================
+   TABLE CARD
+   ============================================================================== */
 .table-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 20px;
 }
 
-.table-responsive {
-  overflow-x: auto;
-}
-
+.table-responsive { overflow-x: auto; }
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.78rem;
   text-align: left;
+  font-size: 0.8rem;
 }
 th {
+  background: #0f172a;
   color: var(--subtext);
   border-bottom: 1px solid var(--border);
   padding: 9px 12px;
@@ -610,175 +494,27 @@ td {
 }
 tr:hover td { background: #334155; }
 
-/* ==============================================================================
-   MODAL & STUDIO STYLING
-   ============================================================================== */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
-  z-index: 1000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  backdrop-filter: blur(4px);
-}
-.modal-overlay.open { display: flex; }
-.modal-content {
-  background: #1e293b;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 22px;
-  max-width: 680px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-}
+button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 10px;
-}
-
-.modal-tab-bar {
-  display: flex;
-  gap: 6px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 10px;
-  margin-bottom: 16px;
-  overflow-x: auto;
-}
-.modal-tab-btn {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--subtext);
-  padding: 6px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.modal-tab-btn:hover { border-color: var(--accent); color: var(--text); }
-.modal-tab-btn.active { background: #0369a1; border-color: var(--accent); color: #fff; }
-
-.modal-tab-pane { display: none; }
-.modal-tab-pane.active { display: block; }
-
-.studio-node-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-.studio-pills {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-.btn-pill {
-  background: #0f172a;
-  border: 1px solid var(--border);
-  color: var(--subtext);
-  padding: 5px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.78rem;
-  font-weight: 600;
-  white-space: nowrap;
+.download-ctrl-group {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s;
-}
-.btn-pill:hover { border-color: var(--accent); color: #fff; }
-.btn-pill.active { background: #1e3a8a; border-color: #3b82f6; color: #fff; }
-
-.form-group {
-  margin-bottom: 12px;
-}
-.form-group label {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--subtext);
-  margin-bottom: 4px;
-}
-.form-input, .form-select {
-  width: 100%;
-  background: #0f172a;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 3px 8px;
+  border-radius: 6px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 10px;
-  color: #fff;
-  font-size: 0.82rem;
-}
-.form-input:focus, .form-select:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.field-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-}
-.field-card {
-  background: #0f172a;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 10px;
-  transition: all 0.2s;
-}
-.field-card.disabled {
-  opacity: 0.55;
-  border-style: dashed;
-}
-.field-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.field-row-inputs {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr 0.6fr 0.8fr 0.8fr;
-  gap: 6px;
-}
-@media (max-width: 600px) {
-  .field-row-inputs {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 640px) {
   h1 { font-size: 1.25rem; }
   .grid { grid-template-columns: 1fr 1fr; }
   #map { height: 260px; }
+  .download-ctrl-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 </style>
 </head>
@@ -787,14 +523,15 @@ tr:hover td { background: #334155; }
   <header>
     <div>
       <h1>
-        📡 Weather Station
+        <span class="material-symbols-outlined" style="font-size:1.6rem;color:var(--accent);">sensors</span>
+        Weather Station
         <span class="badge-group">
           <span class="badge badge-cloud">Cloud IoT</span>
-          <span class="badge" id="lblNodeCountBadge">2 Nodes</span>
+          <span class="badge badge-node">Node 1</span>
         </span>
       </h1>
       <p style="color:var(--subtext);font-size:0.8rem;margin-top:2px;">
-        Live Telemetry & Multi-Node Microclimate Monitoring
+        Live Telemetry & ThingSpeak Cloud IoT Monitoring
       </p>
     </div>
     <div class="status-pill syncing" id="pillCloudStatus">
@@ -803,21 +540,15 @@ tr:hover td { background: #334155; }
     </div>
   </header>
 
-  <!-- Location Picker Notification Banner -->
-  <div id="mapPickerBanner" class="map-picker-banner" style="display:none;">
-    <span>📍 <strong>Location Picker Active:</strong> Click anywhere on the map to set coordinates for <strong id="lblPickerNode">Node</strong></span>
-    <button class="btn btn-outline" style="padding:4px 10px;font-size:0.75rem;background:#0284c7;color:#fff;" onclick="finishMapPicking()">Done</button>
-  </div>
-
   <!-- Interactive Map Section -->
   <div class="map-card">
     <div class="map-header">
-      <div class="map-title">
-        🗺️ Geographic Node Locations
-        <span style="font-size:0.75rem;color:var(--subtext);font-weight:normal;">(Click a node pin to switch selection)</span>
+      <div class="map-title" style="display:flex;align-items:center;gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:1.2rem;color:var(--accent);">map</span>
+        <span>Station Location (Node #1)</span>
+        <span style="font-size:0.75rem;color:var(--subtext);font-weight:normal;">(Field deployment coordinates)</span>
       </div>
       <div class="map-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#facc15;"></div> Active Selection</div>
         <div class="legend-item"><div class="legend-dot" style="background:#22c55e;"></div> Online</div>
         <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div> Offline</div>
       </div>
@@ -825,48 +556,69 @@ tr:hover td { background: #334155; }
     <div id="map"></div>
   </div>
 
-  <!-- Dynamic Node Selector Tabs Bar -->
-  <div class="node-tabs-bar" id="nodeTabsBar"></div>
+  <!-- Node Status Header & Action Toolbar -->
+  <div class="node-tabs-bar">
+    <div class="node-badge-card">
+      <div class="tab-indicator online" id="tabIndicator1"></div>
+      <div class="node-title-group">
+        <h2>Node 1 (Field Station)</h2>
+        <span id="tabStatus1">Checking status...</span>
+      </div>
+    </div>
 
-  <!-- Global Action Toolbar -->
-  <div class="actions">
-    <button class="btn btn-outline" id="btnAuto" onclick="toggleAutoSync()">⏸️ Pause Auto-Sync</button>
-    <button class="btn btn-outline" onclick="syncActiveNode()">🔄 Sync Now</button>
-    <button class="btn btn-outline" onclick="openSettingsModal()">⚙️ Node Studio & Settings</button>
-    <button class="btn btn-install" id="btnInstall" onclick="promptInstall()">📱 Install App</button>
+    <div class="actions">
+      <span style="font-size:0.78rem;color:var(--subtext);" id="lblCountdown">Next sync: 20s</span>
+      <button class="btn btn-outline" id="btnAuto" onclick="toggleAutoSync()">
+        <span class="material-symbols-outlined" id="iconAuto" style="font-size:1.05rem;">pause</span>
+        <span id="lblAuto">Pause</span>
+      </button>
+      <button class="btn btn-primary" onclick="syncNode(true)">
+        <span class="material-symbols-outlined" style="font-size:1.05rem;">sync</span>
+        <span>Sync Now</span>
+      </button>
+      <button class="btn btn-install" id="btnInstall" onclick="promptInstall()">
+        <span class="material-symbols-outlined" style="font-size:1.05rem;">install_mobile</span>
+        <span>Install App</span>
+      </button>
+    </div>
   </div>
 
   <!-- Offline Warning Banner -->
   <div id="offlineBanner" class="offline-banner">
-    <span id="offlineBannerText">⚠️ Node is Offline - Showing cached readings</span>
+    <span class="material-symbols-outlined" style="font-size:1.15rem;color:#fca5a5;">warning</span>
+    <span id="offlineBannerText">Node is Offline - Showing cached readings</span>
   </div>
 
-  <!-- Dynamic Telemetry Grid for Selected Node -->
+  <!-- Dynamic Telemetry Grid for Node 1 -->
   <div class="grid" id="telemetryGrid"></div>
 
   <!-- Status Summary Box -->
   <div class="status-box">
     <div class="status-item">
-      🏷️ <strong>Active Node:</strong> <span id="lblActiveStation" style="color:var(--accent);">--</span>
+      <span class="material-symbols-outlined" style="font-size:1.05rem;color:var(--subtext);">label</span>
+      <strong>Station:</strong> <span id="lblActiveStation" style="color:var(--accent);">Node 1</span>
     </div>
     <div class="status-item">
-      🕒 <strong>Latest Reading:</strong> <span id="valTime" style="color:#f8fafc;">--</span>
+      <span class="material-symbols-outlined" style="font-size:1.05rem;color:var(--subtext);">schedule</span>
+      <strong>Latest Reading:</strong> <span id="valTime" style="color:#f8fafc;">--</span>
     </div>
     <div class="status-item">
-      ☁️ <strong>Channel:</strong> <span id="valChannel" style="color:#a78bfa;">--</span>
+      <span class="material-symbols-outlined" style="font-size:1.05rem;color:var(--subtext);">cloud</span>
+      <strong>Channel:</strong> <span id="valChannel" style="color:#a78bfa;">#3543024</span>
     </div>
     <div class="status-item">
-      🆔 <strong>Last Entry:</strong> <span id="valEntry" style="color:var(--green);">#0</span>
-    </div>
-    <div class="status-item">
-      ⏱️ <strong>Next Sync:</strong> <span id="valCountdown" style="color:var(--subtext);">20s</span>
+      <span class="material-symbols-outlined" style="font-size:1.05rem;color:var(--subtext);">tag</span>
+      <strong>Last Entry:</strong> <span id="valEntry" style="color:var(--green);">#0</span>
     </div>
   </div>
 
   <!-- Telemetry Historical Trends Chart -->
   <div class="chart-card">
     <div class="chart-header">
-      <h3 style="font-size:0.95rem;color:#f1f5f9;">📈 Historical Telemetry Trends (Recent Feeds)</h3>
+      <h3 style="font-size:0.95rem;color:#f1f5f9;display:flex;align-items:center;gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:1.15rem;color:var(--accent);">show_chart</span>
+        <span>Historical Telemetry Trends (Recent Feeds)</span>
+      </h3>
       <div class="chart-toggle-group" id="chartToggleGroup"></div>
     </div>
     <canvas id="telemetryChart"></canvas>
@@ -875,8 +627,36 @@ tr:hover td { background: #334155; }
   <!-- Telemetry Historical Data Table -->
   <div class="table-card">
     <div class="table-header" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-      <h3 style="font-size:0.95rem;color:#f1f5f9;">📋 Telemetry Log History (<span id="lblTableNode">--</span>)</h3>
-      <span style="font-size:0.75rem;color:var(--subtext);" id="tableCount">Showing last 30 readings</span>
+      <h3 style="font-size:0.95rem;color:#f1f5f9;display:flex;align-items:center;gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:1.15rem;color:var(--accent);">table_chart</span>
+        <span>Telemetry Log History (<span id="lblTableNode">Node 1</span>)</span>
+      </h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:0.75rem;color:var(--subtext);" id="tableCount">Showing last 30 readings</span>
+        <div class="download-ctrl-group">
+          <label for="selLogAmount" style="font-size:0.72rem;color:var(--subtext);">Amount:</label>
+          <select id="selLogAmount" onchange="handleLogAmountChange()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:0.75rem;outline:none;cursor:pointer;">
+            <option value="30">30</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="250">250</option>
+            <option value="500">500</option>
+            <option value="1000">1,000</option>
+            <option value="8000">Max (8,000)</option>
+            <option value="custom">Custom...</option>
+          </select>
+          <input type="number" id="inputCustomLogAmount" min="1" max="8000" placeholder="Qty" onkeydown="if(event.key==='Enter') downloadSpecificAmountLogs()" style="display:none;width:68px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:0.75rem;outline:none;">
+          <select id="selLogFormat" onchange="handleLogFormatChange()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:0.75rem;outline:none;cursor:pointer;">
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+          </select>
+          <button class="btn btn-outline" id="btnDownloadLog" style="padding:3px 10px;font-size:0.75rem;display:inline-flex;align-items:center;gap:4px;" onclick="downloadSpecificAmountLogs()">
+            <span id="btnDownloadSpinner" style="display:none;">⏳</span>
+            <span class="material-symbols-outlined" id="iconDownload" style="font-size:1rem;">download</span>
+            <span id="btnDownloadText">Download CSV</span>
+          </button>
+        </div>
+      </div>
     </div>
     <div class="table-responsive">
       <table>
@@ -887,315 +667,59 @@ tr:hover td { background: #334155; }
   </div>
 </div>
 
-<!-- ==============================================================================
-     SETTINGS & NODE STUDIO MODAL
-     ============================================================================== -->
-<div class="modal-overlay" id="settingsModal" onclick="handleModalOverlayClick(event)">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 style="color:#f8fafc;font-size:1.1rem;display:flex;align-items:center;gap:6px;">
-        ⚙️ Node Studio & System Settings
-      </h3>
-      <button onclick="closeSettingsModal()" style="background:transparent;border:none;color:var(--subtext);font-size:1.4rem;cursor:pointer;">&times;</button>
-    </div>
-
-    <!-- Modal Tabs -->
-    <div class="modal-tab-bar">
-      <button class="modal-tab-btn active" id="btnTabStudio" onclick="switchModalTab('studio')">📍 Nodes & Sensor Studio</button>
-      <button class="modal-tab-btn" id="btnTabSync" onclick="switchModalTab('sync')">⏱️ Sync & Basemap</button>
-      <button class="modal-tab-btn" id="btnTabBackup" onclick="switchModalTab('backup')">💾 Backup & JSON</button>
-    </div>
-
-    <!-- TAB 1: NODES & SENSOR STUDIO -->
-    <div id="tabPaneStudio" class="modal-tab-pane active">
-      <div class="studio-node-nav">
-        <div id="studioNodePills" class="studio-pills"></div>
-        <button class="btn btn-green btn-sm" onclick="studioAddNewNode()">➕ Add Node</button>
-      </div>
-
-      <!-- Active Node Edit Card -->
-      <div style="background:#0b1120;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">
-          <h4 style="color:var(--accent);font-size:0.88rem;display:flex;align-items:center;gap:6px;" id="lblStudioHeader">
-            📍 Node Parameters
-          </h4>
-          <button class="btn btn-red btn-sm" id="btnStudioDeleteNode" onclick="studioDeleteActiveNode()">🗑️ Delete Node</button>
-        </div>
-
-        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
-          <div class="form-group">
-            <label>Node Label / Name</label>
-            <input type="text" id="studioNodeName" class="form-input">
-          </div>
-          <div class="form-group">
-            <label>Marker Color</label>
-            <input type="color" id="studioNodeColor" class="form-input" style="height:35px;padding:2px 4px;cursor:pointer;">
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div class="form-group">
-            <label>ThingSpeak Channel ID</label>
-            <input type="text" id="studioNodeChannel" class="form-input" placeholder="e.g. 3543024">
-          </div>
-          <div class="form-group">
-            <label>Read API Key</label>
-            <input type="text" id="studioNodeReadKey" class="form-input" placeholder="16-char key">
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end;">
-          <div class="form-group" style="margin-bottom:0;">
-            <label>Latitude</label>
-            <input type="number" step="any" id="studioNodeLat" class="form-input">
-          </div>
-          <div class="form-group" style="margin-bottom:0;">
-            <label>Longitude</label>
-            <input type="number" step="any" id="studioNodeLon" class="form-input">
-          </div>
-          <button class="btn btn-outline btn-sm" style="margin-bottom:0;height:35px;white-space:nowrap;" onclick="startMapPicking()" title="Click on the Leaflet map to set coordinates">
-            📍 Pick on Map
-          </button>
-        </div>
-      </div>
-
-      <!-- Field Mapping Studio -->
-      <h4 style="color:#f1f5f9;font-size:0.85rem;margin:12px 0 6px 0;display:flex;justify-content:space-between;align-items:center;">
-        <span>🎛️ Sensor Field Mappings (Fields 1 - 8)</span>
-        <span style="font-size:0.72rem;color:var(--subtext);font-weight:normal;">Map ThingSpeak fields to metrics</span>
-      </h4>
-      <div id="studioFieldsList" class="field-grid"></div>
-    </div>
-
-    <!-- TAB 2: SYNC & BASEMAP -->
-    <div id="tabPaneSync" class="modal-tab-pane">
-      <h4 style="color:#22c55e;font-size:0.85rem;margin-bottom:10px;text-transform:uppercase;">⏱️ Global Synchronization</h4>
-      <div class="form-group">
-        <label>Auto-Sync Interval (seconds)</label>
-        <input type="number" id="cfgInterval" class="form-input" min="15" max="300" value="20">
-      </div>
-      <div class="form-group">
-        <label>Feeds to Retrieve per Request</label>
-        <input type="number" id="cfgResults" class="form-input" min="5" max="100" value="30">
-      </div>
-
-      <h4 style="color:#facc15;font-size:0.85rem;margin-top:16px;margin-bottom:10px;text-transform:uppercase;">🗺️ Map Basemap & API Key</h4>
-      <div class="form-group">
-        <label>CARTO API Key (Optional)</label>
-        <input type="text" id="cfgCartoKey" class="form-input" placeholder="Leave empty for free OpenStreetMap dark mode">
-        <span style="font-size:0.72rem;color:var(--subtext);margin-top:4px;display:block;">
-          Default is 100% free OpenStreetMap with dark theme filter (no API key needed).
-        </span>
-      </div>
-    </div>
-
-    <!-- TAB 3: BACKUP & JSON CONFIG -->
-    <div id="tabPaneBackup" class="modal-tab-pane">
-      <h4 style="color:#a78bfa;font-size:0.85rem;margin-bottom:8px;text-transform:uppercase;">💾 Configuration JSON Export / Import</h4>
-      <p style="font-size:0.76rem;color:var(--subtext);margin-bottom:12px;">
-        Export your complete multi-node and sensor setup to a JSON file, or paste an exported configuration to synchronize multiple devices.
-      </p>
-
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button class="btn btn-green btn-sm" onclick="exportConfigJson()">💾 Download Config (.json)</button>
-        <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0;">
-          📂 Load from File
-          <input type="file" id="cfgFileInput" accept=".json" style="display:none;" onchange="handleConfigFileUpload(event)">
-        </label>
-      </div>
-
-      <div class="form-group">
-        <label>Raw Configuration JSON</label>
-        <textarea id="txtConfigJson" class="form-input" rows="8" style="font-family:monospace;font-size:0.75rem;resize:vertical;"></textarea>
-      </div>
-      <button class="btn btn-outline btn-sm" onclick="applyJsonFromTextarea()">Apply Pasted JSON</button>
-    </div>
-
-    <div class="modal-actions">
-      <button onclick="resetSettingsDefaults()" class="btn btn-outline" style="margin-right:auto;">Reset Factory Defaults</button>
-      <button onclick="closeSettingsModal()" class="btn btn-outline">Cancel</button>
-      <button onclick="saveSettings()" class="btn btn-green">Save & Apply</button>
-    </div>
-  </div>
-</div>
-
 <script>
 // ==============================================================================
-// SENSOR PRESETS CATALOG
+// HARDCODED NODE 1 CONFIGURATION (DETERMINISTIC SINGLE-NODE ARCHITECTURE)
 // ==============================================================================
-const SENSOR_PRESETS = {
-  // Atmospheric
-  temp: { label: "Temperature", unit: "°C", icon: "🌡️", color: "#f97316", min: 0, max: 50, decimals: 1 },
-  hum: { label: "Humidity", unit: "%", icon: "💧", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
-  lux: { label: "Ambient Light", unit: "Lux", icon: "☀️", color: "#eab308", min: 0, max: 2000, decimals: 0 },
-  pressure: { label: "Pressure", unit: "hPa", icon: "⏲️", color: "#6366f1", min: 900, max: 1100, decimals: 1 },
-  rain_rate: { label: "Rain Rate", unit: "mm/h", icon: "🌧️", color: "#38bdf8", min: 0, max: 100, decimals: 1 },
-  wind_speed: { label: "Wind Speed", unit: "m/s", icon: "💨", color: "#0ea5e9", min: 0, max: 40, decimals: 1 },
-
-  // Environment & Air Quality
-  uvi: { label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
-  pm25: { label: "PM2.5 Dust", unit: "µg/m³", icon: "💨", color: "#ef4444", min: 0, max: 150, decimals: 0 },
-  pm10: { label: "PM10 Coarse", unit: "µg/m³", icon: "🌫️", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
-  pm1: { label: "PM1.0 Fine", unit: "µg/m³", icon: "✨", color: "#fb7185", min: 0, max: 150, decimals: 0 },
-  co2: { label: "CO2 Gas", unit: "ppm", icon: "☁️", color: "#fb923c", min: 400, max: 2500, decimals: 0 },
-
-  // Hydrology & Water
-  water_level: { label: "Water Level", unit: "cm", icon: "🌊", color: "#0284c7", min: 0, max: 500, decimals: 1 },
-  water_temp: { label: "Water Temp", unit: "°C", icon: "🐟", color: "#06b6d4", min: 0, max: 40, decimals: 1 },
-  flow_rate: { label: "Flow Rate", unit: "L/min", icon: "🚰", color: "#38bdf8", min: 0, max: 200, decimals: 1 },
-
-  // Diagnostics & Electrical
-  battery_v: { label: "Battery Voltage", unit: "V", icon: "🔋", color: "#22c55e", min: 3.0, max: 4.2, decimals: 2 },
-  battery_pct: { label: "Battery Level", unit: "%", icon: "🔋", color: "#10b981", min: 0, max: 100, decimals: 0 },
-  solar_w: { label: "Solar Power", unit: "W", icon: "🔆", color: "#f59e0b", min: 0, max: 50, decimals: 1 },
-  rssi: { label: "Signal RSSI", unit: "dBm", icon: "📡", color: "#8b5cf6", min: -120, max: 0, decimals: 0 }
-};
-
-// ==============================================================================
-// DEFAULT CONFIGURATION (FACTORY DEFAULTS)
-// ==============================================================================
-const DEFAULT_CONFIG = {
-  version: 2,
-  intervalSec: 20,
-  resultsCount: 30,
-  cartoApiKey: "cb1_4xx0_1_cd11d006961464e31ddff4b1",
-  nodes: [
-    {
-      id: 1,
-      name: "Node 1",
-      channelId: "3543024",
-      readKey: "WK8Z6FH8W8UTJS7Q",
-      lat: 10.841168077294883,
-      lon: 106.80988926666828,
-      color: "#38bdf8",
-      fields: [
-        { field: "field1", label: "Temperature", unit: "°C", icon: "🌡️", color: "#f97316", min: 0, max: 50, decimals: 1 },
-        { field: "field2", label: "Humidity", unit: "%", icon: "💧", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
-        { field: "field3", label: "Ambient Light", unit: "Lux", icon: "☀️", color: "#eab308", min: 0, max: 2000, decimals: 0 },
-        { field: "field4", label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
-        { field: "field5", label: "PM2.5 Dust", unit: "µg/m³", icon: "💨", color: "#ef4444", min: 0, max: 150, decimals: 0 },
-        { field: "field6", label: "PM10 Coarse", unit: "µg/m³", icon: "🌫️", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
-        { field: "field7", label: "PM1.0 Fine", unit: "µg/m³", icon: "✨", color: "#fb7185", min: 0, max: 150, decimals: 0 }
-      ]
-    },
-    {
-      id: 2,
-      name: "Node 2",
-      channelId: "3558474",
-      readKey: "6Y885RXM1MREEGV1",
-      lat: 10.840083260390088,
-      lon: 106.81139950400448,
-      color: "#a78bfa",
-      fields: [
-        { field: "field1", label: "Temperature", unit: "°C", icon: "🌡️", color: "#f97316", min: 0, max: 50, decimals: 1 },
-        { field: "field2", label: "Humidity", unit: "%", icon: "💧", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
-        { field: "field3", label: "Ambient Light", unit: "Lux", icon: "☀️", color: "#eab308", min: 0, max: 2000, decimals: 0 },
-        { field: "field4", label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
-        { field: "field5", label: "PM2.5 Dust", unit: "µg/m³", icon: "💨", color: "#ef4444", min: 0, max: 150, decimals: 0 },
-        { field: "field6", label: "PM10 Coarse", unit: "µg/m³", icon: "🌫️", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
-        { field: "field7", label: "PM1.0 Fine", unit: "µg/m³", icon: "✨", color: "#fb7185", min: 0, max: 150, decimals: 0 }
-      ]
-    }
+const NODE = {
+  id: 1,
+  name: "Node 1",
+  channelId: "3543024",
+  lat: null,
+  lon: null,
+  color: "#38bdf8",
+  fields: [
+    { field: "field1", label: "Temperature", unit: "°C", icon: "thermostat", color: "#f97316", min: 0, max: 50, decimals: 1 },
+    { field: "field2", label: "Humidity", unit: "%", icon: "water_drop", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
+    { field: "field3", label: "Ambient Light", unit: "Lux", icon: "light_mode", color: "#eab308", min: 0, max: 2000, decimals: 0 },
+    { field: "field4", label: "UV Index", unit: "UVI", icon: "wb_sunny", color: "#a855f7", min: 0, max: 12, decimals: 2 },
+    { field: "field5", label: "PM2.5 Dust", unit: "µg/m³", icon: "air", color: "#ef4444", min: 0, max: 150, decimals: 0 },
+    { field: "field6", label: "PM10 Coarse", unit: "µg/m³", icon: "foggy", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
+    { field: "field7", label: "PM1.0 Fine", unit: "µg/m³", icon: "grain", color: "#fb7185", min: 0, max: 150, decimals: 0 }
   ]
 };
 
+const SYNC_INTERVAL_SEC = 20;
+const RESULTS_COUNT = 30;
+const CARTO_KEY = "cb1_4xx0_1_cd11d006961464e31ddff4b1";
+
 // Global App State
-let nodesConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-let activeNodeId = 1;
 let autoSync = true;
 let countdownTimer = null;
-let secondsRemaining = 20;
+let secondsRemaining = SYNC_INTERVAL_SEC;
 
-// Cached Feeds & Health per Node: { [nodeId]: [...] }
-let nodeFeeds = {};
+// Cached Feeds & Health
+let nodeFeeds = [];
 let nodeLatest = {};
 
-// Leaflet Map & Markers
+// Leaflet Map & Marker
 let mapInstance = null;
 let currentTileLayer = null;
-let mapMarkers = {};
-let pickingNodeId = null;
+let nodeMarker = null;
+let mapCenteredOnce = false;
 
-// Chart Metric Enabled State: { [fieldKey]: boolean }
+// Chart Metric Enabled State
 let chartMetrics = {};
 
 // ==============================================================================
-// INITIALIZATION & MIGRATION
+// INITIALIZATION
 // ==============================================================================
 function initApp() {
-  loadStoredSettings();
   initMap();
-  renderNodeTabs();
-  syncAllNodes();
+  renderChartControls();
+  syncNode();
   startCountdown();
   setupPWA();
-}
-
-function loadStoredSettings() {
-  try {
-    const saved = localStorage.getItem('weather_station_multinode_cfg');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Migrate v1 legacy dictionary schema to v2 array schema if needed
-      if (parsed.nodes && !Array.isArray(parsed.nodes)) {
-        console.log("[MIGRATE] Upgrading legacy v1 dictionary config to v2 dynamic schema...");
-        const newNodes = [];
-        for (let k in parsed.nodes) {
-          if (k === 'cartoApiKey') continue;
-          const oldN = parsed.nodes[k];
-          newNodes.push({
-            id: Number(k),
-            name: oldN.name || `Node ${k}`,
-            channelId: oldN.channelId || "",
-            readKey: oldN.readKey || "",
-            lat: Number(oldN.lat) || 10.841,
-            lon: Number(oldN.lon) || 106.809,
-            color: Number(k) === 1 ? "#38bdf8" : "#a78bfa",
-            fields: JSON.parse(JSON.stringify(DEFAULT_CONFIG.nodes[0].fields))
-          });
-        }
-        nodesConfig = {
-          version: 2,
-          intervalSec: parsed.intervalSec || 20,
-          resultsCount: parsed.resultsCount || 30,
-          cartoApiKey: parsed.nodes.cartoApiKey || parsed.cartoApiKey || DEFAULT_CONFIG.cartoApiKey,
-          nodes: newNodes.length > 0 ? newNodes : JSON.parse(JSON.stringify(DEFAULT_CONFIG.nodes))
-        };
-        saveSettingsToStorage();
-      } else if (parsed.nodes && Array.isArray(parsed.nodes)) {
-        nodesConfig = parsed;
-        // Ensure each node has fields array
-        nodesConfig.nodes.forEach((n, idx) => {
-          if (!n.fields || n.fields.length === 0) {
-            n.fields = JSON.parse(JSON.stringify(DEFAULT_CONFIG.nodes[0].fields));
-          }
-          if (!n.color) {
-            n.color = idx === 0 ? "#38bdf8" : idx === 1 ? "#a78bfa" : "#34d399";
-          }
-        });
-      }
-    }
-  } catch (e) {
-    console.warn("Could not load stored settings, using defaults:", e);
-    nodesConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-  }
-
-  // Ensure activeNodeId exists in nodes
-  if (!getNode(activeNodeId) && nodesConfig.nodes.length > 0) {
-    activeNodeId = nodesConfig.nodes[0].id;
-  }
-}
-
-function saveSettingsToStorage() {
-  try {
-    localStorage.setItem('weather_station_multinode_cfg', JSON.stringify(nodesConfig));
-  } catch (e) {
-    console.warn("Could not save to localStorage:", e);
-  }
-}
-
-function getNode(nid) {
-  return nodesConfig.nodes.find(n => n.id === Number(nid)) || null;
 }
 
 // ==============================================================================
@@ -1206,11 +730,9 @@ function applyTileLayer() {
   if (currentTileLayer) mapInstance.removeLayer(currentTileLayer);
 
   const mapEl = document.getElementById('map');
-  const cartoKey = nodesConfig.cartoApiKey || DEFAULT_CONFIG.cartoApiKey;
-
-  if (cartoKey && cartoKey.trim()) {
+  if (CARTO_KEY && CARTO_KEY.trim()) {
     mapEl.classList.remove('dark-mode-filtered');
-    currentTileLayer = L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${encodeURIComponent(cartoKey.trim())}`, {
+    currentTileLayer = L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${encodeURIComponent(CARTO_KEY.trim())}`, {
       subdomains: 'abcd',
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap &copy; CARTO'
@@ -1227,62 +749,45 @@ function applyTileLayer() {
 function initMap() {
   if (typeof L === 'undefined') return;
 
-  const firstNode = nodesConfig.nodes[0] || { lat: 10.8411, lon: 106.8098 };
+  const defaultCoords = (NODE.lat !== null && NODE.lon !== null) ? [NODE.lat, NODE.lon] : [0, 0];
+  const defaultZoom = (NODE.lat !== null && NODE.lon !== null) ? 16 : 2;
+
   mapInstance = L.map('map', {
     zoomControl: true,
     attributionControl: false
-  }).setView([firstNode.lat, firstNode.lon], 16);
+  }).setView(defaultCoords, defaultZoom);
 
   applyTileLayer();
 
-  // Listen for map clicks in location picker mode
-  mapInstance.on('click', onMapClickPicker);
-
-  initOrUpdateMapMarkers();
+  if (NODE.lat !== null && NODE.lon !== null) {
+    updateOrCreateMarker();
+  }
 }
 
-function initOrUpdateMapMarkers() {
-  if (!mapInstance) return;
-
-  // Clear existing markers
-  for (let nid in mapMarkers) {
-    mapInstance.removeLayer(mapMarkers[nid]);
-  }
-  mapMarkers = {};
-
-  const latLngs = [];
-  nodesConfig.nodes.forEach(node => {
-    latLngs.push([node.lat, node.lon]);
-    const isActive = node.id === activeNodeId;
-
-    const icon = L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div class="marker-pin ${isActive ? 'active' : ''}" id="markerPin${node.id}" style="background:${node.color || '#0369a1'};">N${node.id}</div>`,
-      iconSize: [34, 34],
-      iconAnchor: [17, 17],
-      popupAnchor: [0, -18]
-    });
-
-    const marker = L.marker([node.lat, node.lon], { icon: icon }).addTo(mapInstance);
-    marker.bindPopup(buildPopupHtml(node.id));
-    marker.on('click', () => switchActiveNode(node.id));
-    mapMarkers[node.id] = marker;
+function updateOrCreateMarker() {
+  if (!mapInstance || NODE.lat === null || NODE.lon === null) return;
+  const h = getNodeHealth();
+  const icon = L.divIcon({
+    className: 'custom-div-icon',
+    html: `<div class="marker-pin active ${h.isOnline ? 'pin-online' : 'pin-offline'}" id="markerPin1" style="background:${NODE.color};">N1</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -18]
   });
 
-  if (latLngs.length > 1) {
-    try {
-      const bounds = L.latLngBounds(latLngs);
-      mapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 });
-    } catch (e) {}
+  if (!nodeMarker) {
+    nodeMarker = L.marker([NODE.lat, NODE.lon], { icon: icon }).addTo(mapInstance);
+  } else {
+    nodeMarker.setLatLng([NODE.lat, NODE.lon]);
   }
+  nodeMarker.bindPopup(buildPopupHtml());
 }
 
-function getNodeHealth(nid) {
-  const latest = nodeLatest[nid];
-  if (!latest || !latest.created_at) {
+function getNodeHealth() {
+  if (!nodeLatest || !nodeLatest.created_at) {
     return { isOnline: false, text: "Offline", timeAgo: "No Data", ageSec: Infinity };
   }
-  const createdMs = new Date(latest.created_at).getTime();
+  const createdMs = new Date(nodeLatest.created_at).getTime();
   const ageSec = Math.max(0, Math.floor((Date.now() - createdMs) / 1000));
   const isOnline = ageSec <= 120; // 2-minute online threshold
 
@@ -1295,162 +800,182 @@ function getNodeHealth(nid) {
   return { isOnline, text: isOnline ? "Online" : "Offline", timeAgo, ageSec };
 }
 
-function buildPopupHtml(nid) {
-  const node = getNode(nid);
-  if (!node) return "";
-  const d = nodeLatest[nid] || {};
-  const h = getNodeHealth(nid);
+function buildPopupHtml() {
+  const d = nodeLatest || {};
+  const h = getNodeHealth();
 
   const statusBadge = h.isOnline
     ? `<span style="background:#065f46;color:#6ee7b7;padding:2px 7px;border-radius:12px;font-size:0.68rem;font-weight:600;">● Online (${h.timeAgo})</span>`
     : `<span style="background:#7f1d1d;color:#fca5a5;padding:2px 7px;border-radius:12px;font-size:0.68rem;font-weight:600;">✕ Offline (${h.timeAgo})</span>`;
 
   let fieldsHtml = '';
-  (node.fields || []).slice(0, 6).forEach(f => {
+  NODE.fields.slice(0, 6).forEach(f => {
     const val = parseVal(d[f.field]);
     const str = val !== null ? `${val.toFixed(f.decimals || 0)} ${f.unit}` : '--';
-    fieldsHtml += `<div class="popup-item"><span>${f.icon} ${f.label}</span><strong>${str}</strong></div>`;
+    fieldsHtml += `<div class="popup-item"><span><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;margin-right:3px;">${f.icon}</span>${f.label}</span><strong>${str}</strong></div>`;
   });
 
   return `
     <div class="popup-node-card">
       <div class="popup-title">
-        <span>📍 ${node.name}</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:16px;color:var(--accent);">location_on</span> ${NODE.name}</span>
         ${statusBadge}
       </div>
       <div style="font-size:0.72rem;color:#94a3b8;margin-bottom:4px;">
-        Channel: <strong>#${node.channelId}</strong> | ${d.created_at ? formatTime(d.created_at) : 'Awaiting data...'}
+        Channel: <strong>#${NODE.channelId}</strong> | ${d.created_at ? formatTime(d.created_at) : 'Awaiting data...'}
       </div>
       <div class="popup-grid">
         ${fieldsHtml}
       </div>
-      <button class="btn-popup-select" onclick="switchActiveNode(${nid})">Select ${node.name}</button>
     </div>
   `;
 }
 
-function updateMapMarkerPopups() {
-  nodesConfig.nodes.forEach(node => {
-    const nid = node.id;
-    const pin = document.getElementById('markerPin' + nid);
-    const h = getNodeHealth(nid);
-    if (pin) {
-      pin.className = 'marker-pin';
-      if (nid === activeNodeId) pin.classList.add('active');
-      if (h.isOnline) pin.classList.add('pin-online');
-      else pin.classList.add('pin-offline');
-    }
-    if (mapMarkers[nid]) {
-      mapMarkers[nid].setPopupContent(buildPopupHtml(nid));
-    }
-  });
-}
-
-// Interactive Map Location Picker
-function startMapPicking() {
-  pickingNodeId = studioActiveNodeId || activeNodeId;
-  const node = getNode(pickingNodeId) || { name: `Node ${pickingNodeId}` };
-  document.getElementById('lblPickerNode').innerText = node.name;
-  document.getElementById('mapPickerBanner').style.display = 'flex';
-  closeSettingsModal();
-  if (mapInstance) {
-    mapInstance.scrollWheelZoom.enable();
-    document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+function updateMapMarkerPopup() {
+  if (!nodeMarker) {
+    updateOrCreateMarker();
+    return;
   }
-}
-
-function onMapClickPicker(e) {
-  if (pickingNodeId === null) return;
-  const lat = e.latlng.lat;
-  const lon = e.latlng.lng;
-
-  const node = getNode(pickingNodeId);
-  if (node) {
-    node.lat = lat;
-    node.lon = lon;
+  const pin = document.getElementById('markerPin1');
+  const h = getNodeHealth();
+  if (pin) {
+    pin.className = 'marker-pin active';
+    if (h.isOnline) pin.classList.add('pin-online');
+    else pin.classList.add('pin-offline');
   }
-
-  // Update marker position
-  if (mapMarkers[pickingNodeId]) {
-    mapMarkers[pickingNodeId].setLatLng([lat, lon]);
-  }
-
-  // Re-open studio with updated coordinates
-  finishMapPicking();
-  openSettingsModal();
-  selectStudioNode(pickingNodeId);
-}
-
-function finishMapPicking() {
-  pickingNodeId = null;
-  document.getElementById('mapPickerBanner').style.display = 'none';
+  nodeMarker.setPopupContent(buildPopupHtml());
 }
 
 // ==============================================================================
-// DYNAMIC UI RENDERING (TABS, TELEMETRY GRID, CHARTS, TABLES)
+// THINGSPEAK CLOUD SYNCHRONIZATION
 // ==============================================================================
-function renderNodeTabs() {
-  const container = document.getElementById('nodeTabsBar');
-  container.innerHTML = '';
-  document.getElementById('lblNodeCountBadge').innerText = `${nodesConfig.nodes.length} Node${nodesConfig.nodes.length > 1 ? 's' : ''}`;
+async function syncNode(manual = false) {
+  updateCloudStatusPill('syncing', manual ? 'Syncing...' : 'Updating...');
+  const url = `https://api.thingspeak.com/channels/${NODE.channelId}/feeds.json?results=${RESULTS_COUNT}`;
 
-  nodesConfig.nodes.forEach(node => {
-    const btn = document.createElement('button');
-    btn.className = `node-tab-btn ${node.id === activeNodeId ? 'active' : ''}`;
-    btn.id = `tabNode${node.id}`;
-    btn.onclick = () => switchActiveNode(node.id);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
 
-    const h = getNodeHealth(node.id);
-    const badgeCls = h.isOnline ? 'online' : 'offline';
-    btn.innerHTML = `📍 ${node.name} <span class="tab-badge ${badgeCls}" id="badgeNode${node.id}">${h.isOnline ? 'Online' : 'Waiting...'}</span>`;
-    container.appendChild(btn);
-  });
-}
+    // Dynamically sync GPS coordinates & station name from ThingSpeak channel metadata
+    const channel = data.channel || {};
+    if (channel.latitude && channel.longitude) {
+      const lat = parseFloat(channel.latitude);
+      const lon = parseFloat(channel.longitude);
+      if (!isNaN(lat) && !isNaN(lon) && (lat !== 0 || lon !== 0)) {
+        const moved = (NODE.lat !== lat || NODE.lon !== lon);
+        NODE.lat = lat;
+        NODE.lon = lon;
+        updateOrCreateMarker();
+        if (mapInstance && (moved || !mapCenteredOnce)) {
+          mapInstance.setView([lat, lon], 16);
+          mapCenteredOnce = true;
+        }
+      }
+    }
+    if (channel.name && channel.name.trim()) {
+      NODE.name = channel.name.trim();
+    }
 
-function switchActiveNode(nid) {
-  activeNodeId = Number(nid);
-
-  // Update tabs UI
-  document.querySelectorAll('.node-tab-btn').forEach(btn => btn.classList.remove('active'));
-  const activeBtn = document.getElementById('tabNode' + nid);
-  if (activeBtn) activeBtn.classList.add('active');
-
-  const node = getNode(nid);
-  if (mapInstance && node) {
-    mapInstance.panTo([node.lat, node.lon], { animate: true, duration: 0.6 });
+    nodeFeeds = data.feeds || [];
+    if (nodeFeeds.length > 0) {
+      nodeLatest = nodeFeeds[nodeFeeds.length - 1];
+    }
+  } catch (e) {
+    console.warn("ThingSpeak fetch error:", e);
   }
-  updateMapMarkerPopups();
 
-  renderActiveNodeTelemetry();
-  renderChartControls();
+  updateNodeStatusUI();
+  renderTelemetryGrid();
   drawTelemetryChart();
   renderHistoryTable();
+  updateMapMarkerPopup();
+  secondsRemaining = SYNC_INTERVAL_SEC;
 }
 
-function renderActiveNodeTelemetry() {
-  const node = getNode(activeNodeId);
-  if (!node) return;
+function updateNodeStatusUI() {
+  const h = getNodeHealth();
+  const tabStatus = document.getElementById('tabStatus1');
+  const tabIndicator = document.getElementById('tabIndicator1');
 
-  const d = nodeLatest[activeNodeId] || {};
-  const h = getNodeHealth(activeNodeId);
+  if (tabStatus) {
+    tabStatus.innerText = h.isOnline ? `Online (${h.timeAgo})` : `Offline (${h.timeAgo})`;
+  }
+  if (tabIndicator) {
+    tabIndicator.className = `tab-indicator ${h.isOnline ? 'online' : 'offline'}`;
+  }
 
-  document.getElementById('lblActiveStation').innerText = node.name;
-  document.getElementById('lblTableNode').innerText = node.name;
-  document.getElementById('valChannel').innerText = node.channelId || '--';
+  if (!autoSync) {
+    updateCloudStatusPill('paused', 'Auto-Sync Paused');
+  } else if (h.isOnline) {
+    updateCloudStatusPill('online', 'Node 1 Online');
+  } else {
+    updateCloudStatusPill('offline', 'Node 1 Offline');
+  }
+}
+
+function updateCloudStatusPill(state, text) {
+  const pill = document.getElementById('pillCloudStatus');
+  const dot = document.getElementById('dotStatus');
+  const txt = document.getElementById('txtCloudStatus');
+  if (!pill) return;
+
+  pill.className = 'status-pill ' + state;
+  dot.className = 'dot ' + state;
+  txt.innerText = text;
+}
+
+function startCountdown() {
+  if (countdownTimer) clearInterval(countdownTimer);
+  secondsRemaining = SYNC_INTERVAL_SEC;
+
+  countdownTimer = setInterval(() => {
+    if (autoSync) {
+      secondsRemaining--;
+      if (secondsRemaining <= 0) {
+        secondsRemaining = SYNC_INTERVAL_SEC;
+        syncNode();
+      }
+      const el = document.getElementById('lblCountdown');
+      if (el) el.innerText = `Next sync: ${secondsRemaining}s`;
+    }
+  }, 1000);
+}
+
+function toggleAutoSync() {
+  autoSync = !autoSync;
+  const icon = document.getElementById('iconAuto');
+  const lbl = document.getElementById('lblAuto');
+  if (icon) icon.innerText = autoSync ? "pause" : "play_arrow";
+  if (lbl) lbl.innerText = autoSync ? "Pause" : "Resume";
+  updateNodeStatusUI();
+}
+
+// ==============================================================================
+// DYNAMIC UI RENDERING (METRIC CARDS, CHARTS, TABLE)
+// ==============================================================================
+function renderTelemetryGrid() {
+  const d = nodeLatest || {};
+  const h = getNodeHealth();
+
+  document.getElementById('lblActiveStation').innerText = NODE.name;
+  document.getElementById('lblTableNode').innerText = NODE.name;
+  document.getElementById('valChannel').innerText = `#${NODE.channelId}`;
   document.getElementById('valTime').innerText = d.created_at ? formatTime(d.created_at) : 'Waiting for telemetry...';
   document.getElementById('valEntry').innerText = d.entry_id ? `#${d.entry_id}` : '#0';
 
-  // Offline banner for active node
+  // Offline banner
   const banner = document.getElementById('offlineBanner');
   const bannerText = document.getElementById('offlineBannerText');
   const grid = document.getElementById('telemetryGrid');
   if (banner && bannerText) {
     if (!h.isOnline && d.created_at) {
-      bannerText.innerText = `⚠️ ${node.name} is Offline - Showing cached readings from ${h.timeAgo} (${formatTime(d.created_at)})`;
+      bannerText.innerText = `${NODE.name} is Offline - Showing cached readings from ${h.timeAgo} (${formatTime(d.created_at)})`;
       banner.classList.add('visible');
       if (grid) grid.classList.add('node-offline');
     } else if (!h.isOnline && !d.created_at) {
-      bannerText.innerText = `⚠️ ${node.name} is Offline - Awaiting initial cloud packet...`;
+      bannerText.innerText = `${NODE.name} is Offline - Awaiting initial cloud packet...`;
       banner.classList.add('visible');
       if (grid) grid.classList.add('node-offline');
     } else {
@@ -1459,14 +984,13 @@ function renderActiveNodeTelemetry() {
     }
   }
 
-  // DYNAMIC SENSOR CARDS
+  // Render 7 metric cards
   grid.innerHTML = '';
-  (node.fields || []).forEach(f => {
+  NODE.fields.forEach(f => {
     const val = parseVal(d[f.field]);
     const strVal = val !== null ? val.toFixed(f.decimals || 0) : '--';
     const norm = val !== null ? Math.min(100, Math.max(0, ((val - f.min) / (f.max - f.min)) * 100)) : 0;
 
-    // Severity Badges (UV index & PM2.5 specials)
     let badgeHtml = '';
     if (f.label.includes("UV") && val !== null) {
       let bText = 'Low', bColor = '#22c55e';
@@ -1488,7 +1012,7 @@ function renderActiveNodeTelemetry() {
     card.innerHTML = `
       <div class="card-header">
         <span>${f.label}</span>
-        <span>${f.icon || '📊'}</span>
+        <span class="material-symbols-outlined" style="font-size:1.25rem;color:${f.color || 'var(--accent)'};">${f.icon || 'bar_chart'}</span>
       </div>
       <div class="card-val">
         <span>${strVal}</span>
@@ -1508,40 +1032,45 @@ function renderActiveNodeTelemetry() {
   // Location Card
   const locCard = document.createElement('div');
   locCard.className = 'card';
+  const hasCoords = (NODE.lat !== null && NODE.lon !== null);
+  const coordsDisplay = hasCoords
+    ? `${NODE.lat.toFixed(5)}, ${NODE.lon.toFixed(5)}`
+    : 'Syncing from ThingSpeak...';
+  const centerBtn = hasCoords
+    ? `<button class="btn btn-outline" style="padding:2px 8px;font-size:0.7rem;" onclick="mapInstance && mapInstance.panTo([${NODE.lat}, ${NODE.lon}])">Center</button>`
+    : `<span style="font-size:0.7rem;color:var(--subtext);">Pending GPS</span>`;
+
   locCard.innerHTML = `
     <div class="card-header">
-      <span>Node Location</span>
-      <span>📍</span>
+      <span>Station Location</span>
+      <span class="material-symbols-outlined" style="font-size:1.25rem;color:var(--accent);">location_on</span>
     </div>
     <div class="card-val" style="font-size:1.1rem;margin-top:4px;">
-      <span>${node.lat.toFixed(5)}, ${node.lon.toFixed(5)}</span>
+      <span>${coordsDisplay}</span>
     </div>
     <div class="card-sub">
-      <span>${node.name}</span>
-      <button class="btn btn-outline" style="padding:2px 8px;font-size:0.7rem;" onclick="mapInstance.panTo([${node.lat}, ${node.lon}])">Center</button>
+      <span>${NODE.name} (Field Station)</span>
+      ${centerBtn}
     </div>
     <div class="bar">
-      <div class="bar-fill" style="width:100%;background:${node.color || 'var(--indigo)'};"></div>
+      <div class="bar-fill" style="width:100%;background:${NODE.color};"></div>
     </div>
   `;
   grid.appendChild(locCard);
 }
 
-// Dynamic Chart Controls
 function renderChartControls() {
-  const node = getNode(activeNodeId);
   const container = document.getElementById('chartToggleGroup');
   container.innerHTML = '';
-  if (!node) return;
 
-  (node.fields || []).forEach(f => {
+  NODE.fields.forEach(f => {
     if (chartMetrics[f.field] === undefined) chartMetrics[f.field] = true;
 
     const btn = document.createElement('button');
     btn.className = `btn-chart ${chartMetrics[f.field] ? 'active' : ''}`;
     btn.id = `btnChart_${f.field}`;
     btn.style.color = chartMetrics[f.field] ? (f.color || 'var(--accent)') : 'var(--subtext)';
-    btn.innerHTML = `${f.icon || '📊'} ${f.label}`;
+    btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:1rem;margin-right:4px;">${f.icon || 'bar_chart'}</span> ${f.label}`;
     btn.onclick = () => {
       chartMetrics[f.field] = !chartMetrics[f.field];
       btn.classList.toggle('active', chartMetrics[f.field]);
@@ -1569,13 +1098,11 @@ function drawTelemetryChart() {
 
   ctx.clearRect(0, 0, W, H);
 
-  const feeds = nodeFeeds[activeNodeId] || [];
-  const node = getNode(activeNodeId);
-  if (!node || feeds.length < 2) {
+  if (nodeFeeds.length < 2) {
     ctx.fillStyle = '#64748b';
     ctx.font = '13px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Waiting for sufficient telemetry feeds for trend plotting...', W / 2, H / 2);
+    ctx.fillText('Waiting for telemetry feeds for trend plotting...', W / 2, H / 2);
     return;
   }
 
@@ -1591,9 +1118,9 @@ function drawTelemetryChart() {
 
   const plotW = W - pad.left - pad.right;
   const plotH = H - pad.top - pad.bottom;
-  const stepX = plotW / (feeds.length - 1);
+  const stepX = plotW / (nodeFeeds.length - 1);
 
-  (node.fields || []).forEach(f => {
+  NODE.fields.forEach(f => {
     if (!chartMetrics[f.field]) return;
 
     ctx.strokeStyle = f.color || '#38bdf8';
@@ -1601,7 +1128,7 @@ function drawTelemetryChart() {
     ctx.beginPath();
     let started = false;
 
-    feeds.forEach((item, idx) => {
+    nodeFeeds.forEach((item, idx) => {
       const val = parseVal(item[f.field]);
       if (val === null) return;
 
@@ -1620,35 +1147,31 @@ function drawTelemetryChart() {
   });
 }
 
-// Dynamic Table History
 function renderHistoryTable() {
-  const node = getNode(activeNodeId);
   const thead = document.getElementById('tableHead');
   const tbody = document.getElementById('tableBody');
-  if (!node) return;
 
   // Render headers
   let thHtml = '<tr><th>Entry ID</th><th>Timestamp (Local)</th>';
-  (node.fields || []).forEach(f => {
+  NODE.fields.forEach(f => {
     thHtml += `<th>${f.label} (${f.unit || ''})</th>`;
   });
   thHtml += '</tr>';
   thead.innerHTML = thHtml;
 
-  const feeds = nodeFeeds[activeNodeId] || [];
-  document.getElementById('tableCount').innerText = `Showing last ${feeds.length} readings`;
+  document.getElementById('tableCount').innerText = `Showing last ${nodeFeeds.length} readings`;
 
-  if (feeds.length === 0) {
-    const cols = 2 + (node.fields ? node.fields.length : 0);
-    tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;padding:24px;color:var(--subtext);">No telemetry feeds received yet for ${node.name}.</td></tr>`;
+  if (nodeFeeds.length === 0) {
+    const cols = 2 + NODE.fields.length;
+    tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;padding:24px;color:var(--subtext);">No telemetry feeds received yet for ${NODE.name}.</td></tr>`;
     return;
   }
 
   let rowsHtml = '';
-  for (let i = feeds.length - 1; i >= 0; i--) {
-    const f = feeds[i];
+  for (let i = nodeFeeds.length - 1; i >= 0; i--) {
+    const f = nodeFeeds[i];
     rowsHtml += `<tr><td><strong>#${f.entry_id}</strong></td><td>${formatTime(f.created_at)}</td>`;
-    (node.fields || []).forEach(fld => {
+    NODE.fields.forEach(fld => {
       const v = parseVal(f[fld.field]);
       rowsHtml += `<td>${v !== null ? v.toFixed(fld.decimals || 0) : '--'}</td>`;
     });
@@ -1674,455 +1197,119 @@ function formatTime(isoStr) {
 }
 
 // ==============================================================================
-// THINGSPEAK CLOUD SYNCHRONIZATION
+// TELEMETRY LOG DOWNLOAD & EXPORT (CONFIGURABLE AMOUNT & FORMAT)
 // ==============================================================================
-async function fetchNodeChannel(nid) {
-  const node = getNode(nid);
-  if (!node || !node.channelId) return null;
+function handleLogAmountChange() {
+  const sel = document.getElementById('selLogAmount');
+  const customInput = document.getElementById('inputCustomLogAmount');
+  if (sel.value === 'custom') {
+    customInput.style.display = 'inline-block';
+    customInput.focus();
+  } else {
+    customInput.style.display = 'none';
+  }
+}
 
-  const url = `https://api.thingspeak.com/channels/${node.channelId}/feeds.json?api_key=${node.readKey}&results=${nodesConfig.resultsCount || 30}`;
+function handleLogFormatChange() {
+  const fmt = (document.getElementById('selLogFormat') ? document.getElementById('selLogFormat').value : 'csv').toUpperCase();
+  const btnText = document.getElementById('btnDownloadText');
+  if (btnText) btnText.innerText = `Download ${fmt}`;
+}
+
+async function downloadSpecificAmountLogs() {
+  const selAmount = document.getElementById('selLogAmount').value;
+  const customInput = document.getElementById('inputCustomLogAmount');
+  const selFormat = (document.getElementById('selLogFormat') ? document.getElementById('selLogFormat').value : 'csv').toLowerCase();
+
+  let count = 30;
+  if (selAmount === 'custom') {
+    const parsed = parseInt(customInput.value, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      alert("Please enter a valid log quantity between 1 and 8,000.");
+      customInput.focus();
+      return;
+    }
+    count = Math.min(parsed, 8000);
+  } else {
+    count = parseInt(selAmount, 10);
+  }
+
+  const btn = document.getElementById('btnDownloadLog');
+  const spinner = document.getElementById('btnDownloadSpinner');
+  const btnText = document.getElementById('btnDownloadText');
+
+  if (btn) btn.disabled = true;
+  if (spinner) spinner.style.display = 'inline';
+  if (btnText) btnText.innerText = `Fetching ${count}...`;
+
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const feeds = data.feeds || [];
-    nodeFeeds[nid] = feeds;
-    if (feeds.length > 0) {
-      nodeLatest[nid] = feeds[feeds.length - 1];
+    let feeds = [];
+    if (count <= nodeFeeds.length && nodeFeeds.length > 0) {
+      feeds = nodeFeeds.slice(-count);
+    } else {
+      const url = `https://api.thingspeak.com/channels/${NODE.channelId}/feeds.json?results=${count}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      feeds = data.feeds || [];
     }
-    return feeds;
-  } catch (e) {
-    console.warn(`Error fetching Node #${nid}:`, e);
-    return null;
+
+    if (feeds.length === 0) {
+      alert("No telemetry records found for download.");
+      return;
+    }
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `weather_station_node1_${feeds.length}_logs_${dateStr}.${selFormat}`;
+
+    if (selFormat === 'json') {
+      const jsonContent = JSON.stringify(feeds, null, 2);
+      triggerFileDownload(filename, jsonContent, 'application/json');
+    } else {
+      const csvContent = generateCsvFromFeeds(feeds);
+      triggerFileDownload(filename, csvContent, 'text/csv;charset=utf-8;');
+    }
+  } catch (err) {
+    console.error("Download logs failed:", err);
+    alert(`Failed to download logs from ThingSpeak: ${err.message}`);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.style.display = 'none';
+    if (btnText) btnText.innerText = `Download ${selFormat.toUpperCase()}`;
   }
 }
 
-async function syncAllNodes() {
-  updateCloudStatusPill('syncing', 'Syncing...');
-  const promises = nodesConfig.nodes.map(n => fetchNodeChannel(n.id));
-  await Promise.all(promises);
+function generateCsvFromFeeds(feeds) {
+  const headers = ["entry_id", "created_at", ...NODE.fields.map(f => `${f.label}${f.unit ? ' (' + f.unit + ')' : ''}`.replace(/,/g, ''))];
+  const rows = [headers.join(",")];
 
-  updateAllNodeStatuses();
-  renderActiveNodeTelemetry();
-  drawTelemetryChart();
-  renderHistoryTable();
-  updateMapMarkerPopups();
-  secondsRemaining = nodesConfig.intervalSec || 20;
-}
-
-async function syncActiveNode() {
-  updateCloudStatusPill('syncing', `Syncing Node #${activeNodeId}...`);
-  await fetchNodeChannel(activeNodeId);
-  updateAllNodeStatuses();
-  renderActiveNodeTelemetry();
-  drawTelemetryChart();
-  renderHistoryTable();
-  updateMapMarkerPopups();
-  secondsRemaining = nodesConfig.intervalSec || 20;
-}
-
-function updateAllNodeStatuses() {
-  let anyOnline = false;
-  nodesConfig.nodes.forEach(node => {
-    const h = getNodeHealth(node.id);
-    if (h.isOnline) anyOnline = true;
-
-    const b = document.getElementById('badgeNode' + node.id);
-    if (b) {
-      b.className = `tab-badge ${h.isOnline ? 'online' : 'offline'}`;
-      b.innerText = h.isOnline ? 'Online' : 'Offline';
-    }
+  feeds.forEach(f => {
+    const row = [
+      f.entry_id,
+      `"${f.created_at}"`,
+      ...NODE.fields.map(fld => f[fld.field] !== undefined ? f[fld.field] : "")
+    ];
+    rows.push(row.join(","));
   });
 
-  if (!autoSync) {
-    updateCloudStatusPill('paused', 'Auto-Sync Paused');
-  } else if (anyOnline) {
-    updateCloudStatusPill('online', 'Nodes Online');
-  } else {
-    updateCloudStatusPill('offline', 'Nodes Offline');
-  }
+  return rows.join("\n");
 }
 
-function updateCloudStatusPill(state, text) {
-  const pill = document.getElementById('pillCloudStatus');
-  const dot = document.getElementById('dotStatus');
-  const txt = document.getElementById('txtCloudStatus');
-  if (!pill) return;
-
-  pill.className = 'status-pill ' + state;
-  dot.className = 'dot ' + state;
-  txt.innerText = text;
-}
-
-function startCountdown() {
-  if (countdownTimer) clearInterval(countdownTimer);
-  secondsRemaining = nodesConfig.intervalSec || 20;
-
-  countdownTimer = setInterval(() => {
-    if (autoSync) {
-      secondsRemaining--;
-      if (secondsRemaining <= 0) {
-        secondsRemaining = nodesConfig.intervalSec || 20;
-        syncAllNodes();
-      }
-      const el = document.getElementById('valCountdown');
-      if (el) el.innerText = `${secondsRemaining}s`;
-    }
-  }, 1000);
-}
-
-function toggleAutoSync() {
-  autoSync = !autoSync;
-  const btn = document.getElementById('btnAuto');
-  btn.innerText = autoSync ? "⏸️ Pause Auto-Sync" : "▶️ Resume Auto-Sync";
-  updateAllNodeStatuses();
-}
-
-// ==============================================================================
-// SETTINGS MODAL & DYNAMIC NODE STUDIO
-// ==============================================================================
-let studioActiveNodeId = null;
-
-function openSettingsModal() {
-  studioActiveNodeId = activeNodeId;
-  renderStudioNodePills();
-  selectStudioNode(studioActiveNodeId);
-
-  // Sync & Basemap Tab inputs
-  document.getElementById('cfgInterval').value = nodesConfig.intervalSec || 20;
-  document.getElementById('cfgResults').value = nodesConfig.resultsCount || 30;
-  document.getElementById('cfgCartoKey').value = nodesConfig.cartoApiKey || "";
-
-  // Backup Tab JSON
-  document.getElementById('txtConfigJson').value = JSON.stringify(nodesConfig, null, 2);
-
-  switchModalTab('studio');
-  document.getElementById('settingsModal').classList.add('open');
-}
-
-function closeSettingsModal() {
-  document.getElementById('settingsModal').classList.remove('open');
-  if (pickingNodeId !== null) finishMapPicking();
-}
-
-function handleModalOverlayClick(e) {
-  if (e.target.id === 'settingsModal') closeSettingsModal();
-}
-
-function switchModalTab(tab) {
-  document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.modal-tab-pane').forEach(p => p.classList.remove('active'));
-
-  if (tab === 'studio') {
-    document.getElementById('btnTabStudio').classList.add('active');
-    document.getElementById('tabPaneStudio').classList.add('active');
-  } else if (tab === 'sync') {
-    document.getElementById('btnTabSync').classList.add('active');
-    document.getElementById('tabPaneSync').classList.add('active');
-  } else if (tab === 'backup') {
-    document.getElementById('btnTabBackup').classList.add('active');
-    document.getElementById('tabPaneBackup').classList.add('active');
-    document.getElementById('txtConfigJson').value = JSON.stringify(nodesConfig, null, 2);
-  }
-}
-
-function renderStudioNodePills() {
-  const container = document.getElementById('studioNodePills');
-  container.innerHTML = '';
-
-  nodesConfig.nodes.forEach(node => {
-    const btn = document.createElement('button');
-    btn.className = `btn-pill ${node.id === studioActiveNodeId ? 'active' : ''}`;
-    btn.id = `pillStudioNode${node.id}`;
-    btn.onclick = () => selectStudioNode(node.id);
-    btn.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${node.color || '#38bdf8'};display:inline-block;"></span> ${node.name}`;
-    container.appendChild(btn);
-  });
-}
-
-function selectStudioNode(nid) {
-  saveCurrentStudioNodeToMemory();
-  studioActiveNodeId = Number(nid);
-
-  document.querySelectorAll('.btn-pill').forEach(b => b.classList.remove('active'));
-  const activePill = document.getElementById('pillStudioNode' + nid);
-  if (activePill) activePill.classList.add('active');
-
-  const node = getNode(nid);
-  if (!node) return;
-
-  document.getElementById('lblStudioHeader').innerText = `📍 Editing: ${node.name} (ID: ${node.id})`;
-  document.getElementById('studioNodeName').value = node.name;
-  document.getElementById('studioNodeColor').value = node.color || '#38bdf8';
-  document.getElementById('studioNodeChannel').value = node.channelId || '';
-  document.getElementById('studioNodeReadKey').value = node.readKey || '';
-  document.getElementById('studioNodeLat').value = node.lat;
-  document.getElementById('studioNodeLon').value = node.lon;
-
-  // Delete button disabled if only 1 node remaining
-  const btnDel = document.getElementById('btnStudioDeleteNode');
-  btnDel.disabled = nodesConfig.nodes.length <= 1;
-
-  renderStudioFieldsList(node);
-}
-
-function saveCurrentStudioNodeToMemory() {
-  if (studioActiveNodeId === null) return;
-  const node = getNode(studioActiveNodeId);
-  if (!node) return;
-
-  node.name = document.getElementById('studioNodeName').value.trim() || `Node ${node.id}`;
-  node.color = document.getElementById('studioNodeColor').value;
-  node.channelId = document.getElementById('studioNodeChannel').value.trim();
-  node.readKey = document.getElementById('studioNodeReadKey').value.trim();
-  node.lat = parseFloat(document.getElementById('studioNodeLat').value) || node.lat;
-  node.lon = parseFloat(document.getElementById('studioNodeLon').value) || node.lon;
-
-  // Save fields 1 - 8
-  const fields = [];
-  for (let i = 1; i <= 8; i++) {
-    const chk = document.getElementById(`fld_chk_${i}`);
-    if (chk && chk.checked) {
-      fields.push({
-        field: `field${i}`,
-        label: document.getElementById(`fld_lbl_${i}`).value.trim() || `Sensor ${i}`,
-        unit: document.getElementById(`fld_unit_${i}`).value.trim() || '',
-        icon: document.getElementById(`fld_icon_${i}`).value.trim() || '📊',
-        color: document.getElementById(`fld_color_${i}`).value || '#38bdf8',
-        min: parseFloat(document.getElementById(`fld_min_${i}`).value) || 0,
-        max: parseFloat(document.getElementById(`fld_max_${i}`).value) || 100,
-        decimals: parseInt(document.getElementById(`fld_dec_${i}`).value) || 0
-      });
-    }
-  }
-  node.fields = fields;
-}
-
-function renderStudioFieldsList(node) {
-  const container = document.getElementById('studioFieldsList');
-  container.innerHTML = '';
-
-  const activeFieldsMap = {};
-  (node.fields || []).forEach(f => {
-    activeFieldsMap[f.field] = f;
-  });
-
-  for (let i = 1; i <= 8; i++) {
-    const fieldKey = `field${i}`;
-    const f = activeFieldsMap[fieldKey] || {
-      field: fieldKey,
-      label: `Sensor ${i}`,
-      unit: '',
-      icon: '📊',
-      color: '#38bdf8',
-      min: 0,
-      max: 100,
-      decimals: 1
-    };
-    const isEnabled = activeFieldsMap[fieldKey] !== undefined;
-
-    const row = document.createElement('div');
-    row.className = `field-card ${isEnabled ? 'enabled' : 'disabled'}`;
-    row.id = `fld_card_${i}`;
-
-    let presetOptions = `<option value="">-- Apply Sensor Preset --</option>`;
-    for (let pKey in SENSOR_PRESETS) {
-      const p = SENSOR_PRESETS[pKey];
-      presetOptions += `<option value="${pKey}">${p.icon} ${p.label} (${p.unit})</option>`;
-    }
-
-    row.innerHTML = `
-      <div class="field-top-row">
-        <label style="cursor:pointer;font-weight:700;color:#f8fafc;display:flex;align-items:center;gap:6px;">
-          <input type="checkbox" id="fld_chk_${i}" ${isEnabled ? 'checked' : ''} onchange="toggleFieldRow(${i})">
-          Field #${i}
-        </label>
-        <select class="form-select" style="max-width:210px;padding:3px 6px;font-size:0.75rem;" onchange="applyPresetToField(${i}, this.value)">
-          ${presetOptions}
-        </select>
-      </div>
-      <div class="field-row-inputs" id="fld_inputs_${i}" style="${isEnabled ? '' : 'display:none;'}">
-        <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:0.68rem;">Label</label>
-          <input type="text" id="fld_lbl_${i}" class="form-input" style="padding:4px 6px;font-size:0.75rem;" value="${f.label}">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:0.68rem;">Unit</label>
-          <input type="text" id="fld_unit_${i}" class="form-input" style="padding:4px 6px;font-size:0.75rem;" value="${f.unit}">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:0.68rem;">Icon</label>
-          <input type="text" id="fld_icon_${i}" class="form-input" style="padding:4px 6px;font-size:0.75rem;" value="${f.icon}">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:0.68rem;">Color</label>
-          <input type="color" id="fld_color_${i}" class="form-input" style="height:28px;padding:1px 2px;cursor:pointer;" value="${f.color || '#38bdf8'}">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:0.68rem;">Min / Max</label>
-          <div style="display:flex;gap:4px;">
-            <input type="number" id="fld_min_${i}" class="form-input" style="padding:4px 4px;font-size:0.72rem;" value="${f.min}" title="Min Value">
-            <input type="number" id="fld_max_${i}" class="form-input" style="padding:4px 4px;font-size:0.72rem;" value="${f.max}" title="Max Value">
-            <input type="hidden" id="fld_dec_${i}" value="${f.decimals !== undefined ? f.decimals : 1}">
-          </div>
-        </div>
-      </div>
-    `;
-    container.appendChild(row);
-  }
-}
-
-function toggleFieldRow(idx) {
-  const chk = document.getElementById(`fld_chk_${idx}`);
-  const card = document.getElementById(`fld_card_${idx}`);
-  const inputs = document.getElementById(`fld_inputs_${idx}`);
-  if (chk.checked) {
-    card.classList.remove('disabled');
-    card.classList.add('enabled');
-    inputs.style.display = 'grid';
-  } else {
-    card.classList.remove('enabled');
-    card.classList.add('disabled');
-    inputs.style.display = 'none';
-  }
-}
-
-function applyPresetToField(idx, presetKey) {
-  if (!presetKey || !SENSOR_PRESETS[presetKey]) return;
-  const p = SENSOR_PRESETS[presetKey];
-
-  document.getElementById(`fld_chk_${idx}`).checked = true;
-  toggleFieldRow(idx);
-
-  document.getElementById(`fld_lbl_${idx}`).value = p.label;
-  document.getElementById(`fld_unit_${idx}`).value = p.unit;
-  document.getElementById(`fld_icon_${idx}`).value = p.icon;
-  document.getElementById(`fld_color_${idx}`).value = p.color;
-  document.getElementById(`fld_min_${idx}`).value = p.min;
-  document.getElementById(`fld_max_${idx}`).value = p.max;
-  document.getElementById(`fld_dec_${idx}`).value = p.decimals !== undefined ? p.decimals : 1;
-}
-
-function studioAddNewNode() {
-  saveCurrentStudioNodeToMemory();
-  const nextId = nodesConfig.nodes.length > 0 ? Math.max(...nodesConfig.nodes.map(n => n.id)) + 1 : 1;
-  const centerLat = nodesConfig.nodes[0] ? nodesConfig.nodes[0].lat + 0.001 : 10.841;
-  const centerLon = nodesConfig.nodes[0] ? nodesConfig.nodes[0].lon + 0.001 : 10.810;
-
-  const newNode = {
-    id: nextId,
-    name: `Node ${nextId}`,
-    channelId: "",
-    readKey: "",
-    lat: centerLat,
-    lon: centerLon,
-    color: nextId === 3 ? "#34d399" : nextId === 4 ? "#fbbf24" : "#ec4899",
-    fields: [
-      { field: "field1", label: "Temperature", unit: "°C", icon: "🌡️", color: "#f97316", min: 0, max: 50, decimals: 1 },
-      { field: "field2", label: "Humidity", unit: "%", icon: "💧", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
-      { field: "field3", label: "Battery", unit: "V", icon: "🔋", color: "#22c55e", min: 3.0, max: 4.2, decimals: 2 }
-    ]
-  };
-
-  nodesConfig.nodes.push(newNode);
-  renderStudioNodePills();
-  selectStudioNode(nextId);
-}
-
-function studioDeleteActiveNode() {
-  if (nodesConfig.nodes.length <= 1) {
-    alert("Cannot delete the last remaining node!");
-    return;
-  }
-  const node = getNode(studioActiveNodeId);
-  if (!confirm(`Are you sure you want to delete ${node ? node.name : 'this node'}?`)) return;
-
-  nodesConfig.nodes = nodesConfig.nodes.filter(n => n.id !== studioActiveNodeId);
-  studioActiveNodeId = nodesConfig.nodes[0].id;
-  renderStudioNodePills();
-  selectStudioNode(studioActiveNodeId);
-}
-
-function resetSettingsDefaults() {
-  if (!confirm("Reset all nodes and dashboard settings to factory defaults?")) return;
-  nodesConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-  saveSettingsToStorage();
-  closeSettingsModal();
-  renderNodeTabs();
-  initOrUpdateMapMarkers();
-  switchActiveNode(nodesConfig.nodes[0].id);
-  syncAllNodes();
-}
-
-function saveSettings() {
-  saveCurrentStudioNodeToMemory();
-
-  nodesConfig.intervalSec = Math.max(15, parseInt(document.getElementById('cfgInterval').value) || 20);
-  nodesConfig.resultsCount = Math.max(5, Math.min(100, parseInt(document.getElementById('cfgResults').value) || 30));
-  nodesConfig.cartoApiKey = document.getElementById('cfgCartoKey').value.trim();
-
-  saveSettingsToStorage();
-  closeSettingsModal();
-
-  // Full UI Refresh
-  renderNodeTabs();
-  initOrUpdateMapMarkers();
-  applyTileLayer();
-
-  // If active node was deleted, switch to first node
-  if (!getNode(activeNodeId)) {
-    activeNodeId = nodesConfig.nodes[0].id;
-  }
-  switchActiveNode(activeNodeId);
-  syncAllNodes();
-}
-
-// JSON Backup Export / Import
-function exportConfigJson() {
-  saveCurrentStudioNodeToMemory();
-  const jsonStr = JSON.stringify(nodesConfig, null, 2);
-  const blob = new Blob([jsonStr], { type: "application/json" });
+function triggerFileDownload(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = `weather_station_nodes_config_${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = filename;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-function handleConfigFileUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    applyJsonString(event.target.result);
-  };
-  reader.readAsText(file);
-}
-
-function applyJsonFromTextarea() {
-  const txt = document.getElementById('txtConfigJson').value;
-  applyJsonString(txt);
-}
-
-function importConfigJson(str) {
-  return applyJsonString(str);
-}
-
-function applyJsonString(str) {
-  try {
-    const parsed = JSON.parse(str);
-    if (!parsed.nodes || !Array.isArray(parsed.nodes) || parsed.nodes.length === 0) {
-      throw new Error("Invalid configuration JSON: 'nodes' array is required.");
-    }
-    nodesConfig = parsed;
-    saveSettingsToStorage();
-    renderStudioNodePills();
-    selectStudioNode(nodesConfig.nodes[0].id);
-    alert("Configuration loaded successfully!");
-  } catch (err) {
-    alert("Failed to parse JSON configuration: " + err.message);
-  }
+// Backwards-compatibility alias
+function exportCsv() {
+  return downloadSpecificAmountLogs();
 }
 
 // ==============================================================================

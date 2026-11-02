@@ -12,7 +12,15 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Weather Station - Standalone Node & Local Server</title>
+<!-- Google Material Symbols Icons -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 <style>
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+  display: inline-block;
+}
 :root {
   --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --subtext: #94a3b8;
   --accent: #38bdf8; --border: #334155; --green: #22c55e; --yellow: #eab308;
@@ -67,7 +75,7 @@ tr:hover td { background: #334155; }
 <div class="container">
   <header>
     <div>
-      <h1>📡 Weather Station <span class="badge">Standalone Node</span></h1>
+      <h1><span class="material-symbols-outlined" style="font-size:1.5rem;color:var(--accent);">sensors</span> Weather Station <span class="badge">Standalone Node</span></h1>
       <p style="color:var(--subtext);font-size:0.8rem;margin-top:2px;">Integrated Multi-Sensor Station & Local Web Service</p>
     </div>
     <div class="status-pill">
@@ -78,61 +86,61 @@ tr:hover td { background: #334155; }
 
   <!-- Node Navigation Tabs (Maintains Gateway Layout) -->
   <div class="node-tabs" id="nodeTabs">
-    <button class="node-tab active" id="tabNode1" onclick="selectNode(1)">📍 Node #1 <span class="tag" id="tagNode1">Online</span></button>
+    <button class="node-tab active" id="tabNode1" onclick="selectNode(1)"><span class="material-symbols-outlined" style="font-size:1rem;">location_on</span> Node #1 <span class="tag" id="tagNode1">Online</span></button>
   </div>
 
   <div class="actions">
-    <button id="btnAuto" class="btn btn-outline" onclick="toggleRefresh()">⏸️ Pause Updates</button>
-    <button class="btn btn-outline" onclick="fetchData()">🔄 Sync Now</button>
-    <a href="/download" id="btnDownload" class="btn btn-green">💾 Download CSV Log</a>
+    <button id="btnAuto" class="btn btn-outline" onclick="toggleRefresh()"><span class="material-symbols-outlined" id="iconAuto" style="font-size:1rem;">pause</span> <span id="lblAuto">Pause Updates</span></button>
+    <button class="btn btn-outline" onclick="fetchData()"><span class="material-symbols-outlined" style="font-size:1rem;">sync</span> Sync Now</button>
+    <a href="/download" id="btnDownload" class="btn btn-green"><span class="material-symbols-outlined" id="iconDownload" style="font-size:1rem;">download</span> <span id="lblDownload">Download CSV Log</span></a>
   </div>
 
   <!-- Telemetry Sensor Cards for Active Station -->
   <div class="grid">
     <div class="card">
-      <div class="card-header"><span>TEMPERATURE</span><span>🌡️</span></div>
+      <div class="card-header"><span>TEMPERATURE</span><span class="material-symbols-outlined" style="color:var(--orange);">thermostat</span></div>
       <div class="card-val"><span id="valTemp">--</span><span class="card-unit">°C</span></div>
       <div class="card-sub">AM2301B Precision Sensor</div>
       <div class="bar"><div id="barTemp" class="bar-fill" style="background:var(--orange);"></div></div>
     </div>
 
     <div class="card">
-      <div class="card-header"><span>HUMIDITY</span><span>💧</span></div>
+      <div class="card-header"><span>HUMIDITY</span><span class="material-symbols-outlined" style="color:var(--cyan);">water_drop</span></div>
       <div class="card-val"><span id="valHum">--</span><span class="card-unit">%</span></div>
       <div class="card-sub">AM2301B Relative Humidity</div>
       <div class="bar"><div id="barHum" class="bar-fill" style="background:var(--cyan);"></div></div>
     </div>
 
     <div class="card">
-      <div class="card-header"><span>AMBIENT LIGHT</span><span>☀️</span></div>
+      <div class="card-header"><span>AMBIENT LIGHT</span><span class="material-symbols-outlined" style="color:var(--yellow);">light_mode</span></div>
       <div class="card-val"><span id="valLux">--</span><span class="card-unit">Lux</span></div>
       <div class="card-sub">BH1750 Light Sensor</div>
       <div class="bar"><div id="barLux" class="bar-fill" style="background:var(--yellow);"></div></div>
     </div>
 
     <div class="card">
-      <div class="card-header"><span>PM1.0 ULTRA-FINE</span><span>✨</span></div>
+      <div class="card-header"><span>PM1.0 ULTRA-FINE</span><span class="material-symbols-outlined" style="color:#fb7185;">grain</span></div>
       <div class="card-val"><span id="valPm1">--</span><span class="card-unit">µg/m³</span></div>
       <div class="card-sub">Ultra-fine Dust (APM10)</div>
       <div class="bar"><div id="barPm1" class="bar-fill" style="background:#fb7185;"></div></div>
     </div>
 
     <div class="card">
-      <div class="card-header"><span>UV INDEX</span><span>🟣</span></div>
+      <div class="card-header"><span>UV INDEX</span><span class="material-symbols-outlined" style="color:var(--purple);">wb_sunny</span></div>
       <div class="card-val"><span id="valUvi">--</span><span class="card-unit">UVI</span></div>
       <div class="card-sub">LTR390 UV Sensor</div>
       <div class="bar"><div id="barUvi" class="bar-fill" style="background:var(--purple);"></div></div>
     </div>
 
     <div class="card">
-      <div class="card-header"><span>PM2.5 DUST</span><span>💨</span></div>
+      <div class="card-header"><span>PM2.5 DUST</span><span class="material-symbols-outlined" style="color:#ef4444;">air</span></div>
       <div class="card-val"><span id="valPm25">--</span><span class="card-unit">µg/m³</span></div>
       <div class="card-sub">Laser Dust (APM10)</div>
       <div class="bar"><div id="barPm25" class="bar-fill" style="background:#ef4444;"></div></div>
     </div>
 
     <div class="card">
-      <div class="card-header"><span>PM10 COARSE</span><span>🌫️</span></div>
+      <div class="card-header"><span>PM10 COARSE</span><span class="material-symbols-outlined" style="color:#f43f5e;">foggy</span></div>
       <div class="card-val"><span id="valPm10">--</span><span class="card-unit">µg/m³</span></div>
       <div class="card-sub">Coarse Dust (APM10)</div>
       <div class="bar"><div id="barPm10" class="bar-fill" style="background:#f43f5e;"></div></div>
@@ -140,16 +148,18 @@ tr:hover td { background: #334155; }
   </div>
 
   <div class="status-box">
-    <div class="status-item">🏷️ <strong>Selected Node:</strong> <span id="valNode" style="color:#a78bfa;">Node #1</span></div>
-    <div class="status-item">🕒 <strong>Last Reading:</strong> <span id="valTime" style="color:var(--accent);">--</span></div>
-    <div class="status-item">🔌 <strong>Bus Link:</strong> <span id="valBus">Direct Onboard I2C / ADC</span></div>
-    <div class="status-item">💾 <strong>Storage:</strong> <span id="valSd">Checking...</span></div>
-    <div class="status-item">📊 <strong>Logged:</strong> <span id="valRows">0 records</span></div>
+    <div class="status-item"><span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--subtext);">label</span> <strong>Selected Node:</strong> <span id="valNode" style="color:#a78bfa;">Node #1</span></div>
+    <div class="status-item"><span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--subtext);">schedule</span> <strong>Last Reading:</strong> <span id="valTime" style="color:var(--accent);">--</span></div>
+    <div class="status-item"><span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--subtext);">power</span> <strong>Bus Link:</strong> <span id="valBus">Direct Onboard I2C / ADC</span></div>
+    <div class="status-item"><span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--subtext);">sd_card</span> <strong>Storage:</strong> <span id="valSd">Checking...</span></div>
+    <div class="status-item"><span class="material-symbols-outlined" style="font-size:1.1rem;color:var(--subtext);">bar_chart</span> <strong>Logged:</strong> <span id="valRows">0 records</span></div>
   </div>
 
   <div class="table-card">
     <div class="table-header" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
-      <h3 style="font-size:0.95rem;color:#f1f5f9;">Recent Telemetry History</h3>
+      <h3 style="font-size:0.95rem;color:#f1f5f9;display:flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:1.15rem;color:var(--accent);">table_chart</span> Recent Telemetry History</h3>
+      <span style="font-size:0.75rem;color:var(--subtext);" id="histCount">Showing recent readings</span>
+    </div>
       <span style="font-size:0.75rem;color:var(--subtext);" id="histCount">Showing recent readings</span>
     </div>
     <div class="table-responsive">
@@ -222,16 +232,16 @@ async function fetchData() {
     renderActiveNode();
 
     const sdSpan = document.getElementById('valSd');
-    const btnDl = document.getElementById('btnDownload');
+    const lblDl = document.getElementById('lblDownload');
     if (d.storage_type === 'sd') {
       sdSpan.innerHTML = '<span style="color:#22c55e;">● MicroSD (/sd)</span>';
-      if (btnDl) btnDl.innerText = '💾 Download CSV (SD)';
+      if (lblDl) lblDl.innerText = 'Download CSV (SD)';
     } else if (d.storage_type === 'flash') {
       sdSpan.innerHTML = '<span style="color:#38bdf8;">● Internal Flash (16MB)</span>';
-      if (btnDl) btnDl.innerText = '💾 Download CSV (Flash)';
+      if (lblDl) lblDl.innerText = 'Download CSV (Flash)';
     } else {
       sdSpan.innerHTML = '<span style="color:#ef4444;">✕ RAM Buffer Only</span>';
-      if (btnDl) btnDl.innerText = '💾 Download CSV (None)';
+      if (lblDl) lblDl.innerText = 'Download CSV (None)';
     }
     document.getElementById('valRows').innerText = (d.log_count || 0) + ' records';
 
@@ -270,7 +280,10 @@ async function fetchHistory() {
 
 function toggleRefresh() {
   autoRefresh = !autoRefresh;
-  document.getElementById('btnAuto').innerText = autoRefresh ? '⏸️ Pause Updates' : '▶️ Resume Updates';
+  const icon = document.getElementById('iconAuto');
+  const lbl = document.getElementById('lblAuto');
+  if (icon) icon.innerText = autoRefresh ? 'pause' : 'play_arrow';
+  if (lbl) lbl.innerText = autoRefresh ? 'Pause Updates' : 'Resume Updates';
 }
 
 fetchData();
