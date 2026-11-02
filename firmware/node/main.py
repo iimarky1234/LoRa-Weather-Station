@@ -1,9 +1,15 @@
 # ==============================================================================
 # Weather Station Node Main Application
 # Samples all sensors and transmits telemetry packets over 434 MHz LoRa (SX1278)
+# Supports Ultra-Low-Power Deep Sleep Mode with RTC Memory Sequence Persistence
 # ==============================================================================
 import time
-from machine import Pin, I2C
+import machine
+try:
+    import ustruct as struct
+except ImportError:
+    import struct
+from machine import Pin, I2C, RTC
 import config
 
 # Import shared modules
@@ -18,10 +24,41 @@ from drivers.ltr390 import LTR390
 from drivers.ds1307 import DS1307
 from drivers.apm10 import APM10
 
+
+def get_seq_counter():
+    """Retrieves monotonic sequence number preserved across Deep Sleep cycles in RTC memory."""
+    try:
+        mem = RTC().memory()
+        if len(mem) >= 2:
+            return struct.unpack("<H", mem[:2])[0]
+    except Exception:
+        pass
+    return 0
+
+
+def save_seq_counter(seq):
+    """Saves sequence number into ESP32 RTC persistent memory."""
+    try:
+        RTC().memory(struct.pack("<H", seq & 0xFFFF))
+    except Exception:
+        pass
+
+
 def main():
     print("=" * 66)
     print(f"      ESP32-S3 LORA WEATHER STATION - NODE #{config.NODE_ID}      ")
     print("=" * 66)
+
+    # Power & Wake Cause Verification
+    reset_cause = machine.reset_cause()
+    is_deepsleep = reset_cause == machine.DEEPSLEEP_RESET
+    seq_counter = get_seq_counter() if is_deepsleep else 0
+
+    if is_deepsleep:
+        print(f"[PWR] Woke up from Deep Sleep! Resuming at Sequence #{seq_counter}")
+    else:
+        print(f"[PWR] Cold Boot / Power-On Reset. Initializing at Sequence #{seq_counter}")
+        save_seq_counter(seq_counter)
 
     # 1. Initialize Built-in Status LED
     led = StatusLED(config.PIN_RGB_LED_PRIMARY, config.PIN_RGB_LED_SECONDARY, config.LED_BRIGHTNESS)
@@ -42,7 +79,7 @@ def main():
         uart_id=config.UART_ID_APM10,
         tx_pin=config.PIN_APM10_TX,
         rx_pin=config.PIN_APM10_RX,
-        baudrate=config.APM10_BAUDRATE
+        baudrate=config.APM10_BAUDRATE,
     )
 
     # Check connection states
@@ -50,10 +87,14 @@ def main():
     print(f"  * BH1750 Light:     {'[ONLINE]' if bh.is_connected() else '[OFFLINE]'}")
     print(f"  * AM2301B Temp/Hum: {'[ONLINE]' if am.is_connected() else '[OFFLINE]'}")
     print(f"  * LTR390 UV Sensor: {'[ONLINE]' if ltr.is_connected() else '[OFFLINE]'}")
-    print(f"  * APM10 PM Dust:    {'[ONLINE]' if apm.is_connected() else '[OFFLINE]'} (UART{config.UART_ID_APM10} TX:{config.PIN_APM10_TX}, RX:{config.PIN_APM10_RX})")
+    print(
+        f"  * APM10 PM Dust:    {'[ONLINE]' if apm.is_connected() else '[OFFLINE]'} (UART{config.UART_ID_APM10} TX:{config.PIN_APM10_TX}, RX:{config.PIN_APM10_RX})"
+    )
 
     # 4. Initialize SX1278 (Ra-02) LoRa Transceiver
-    print(f"\n[INIT] Initializing SX1278 LoRa (SCK:{config.PIN_LORA_SCK}, CS:{config.PIN_LORA_CS}, RST:{config.PIN_LORA_RST})...")
+    print(
+        f"\n[INIT] Initializing SX1278 LoRa (SCK:{config.PIN_LORA_SCK}, CS:{config.PIN_LORA_CS}, RST:{config.PIN_LORA_RST})..."
+    )
     lora = SX1278(
         spi_bus=1,
         sck=config.PIN_LORA_SCK,
@@ -61,7 +102,7 @@ def main():
         miso=config.PIN_LORA_MISO,
         cs=config.PIN_LORA_CS,
         rst=config.PIN_LORA_RST,
-        dio0=config.PIN_LORA_DIO0
+        dio0=config.PIN_LORA_DIO0,
     )
 
     lora_ok = lora.begin(
@@ -69,7 +110,7 @@ def main():
         bw=config.LORA_BW,
         sf=config.LORA_SF,
         cr=config.LORA_CR,
-        power=config.LORA_POWER
+        power=config.LORA_POWER,
     )
 
     if not lora_ok:
@@ -78,8 +119,7 @@ def main():
     else:
         led.set_green()
 
-    print(f"\n[START] Starting telemetry broadcast loop (Every {config.TX_INTERVAL_SEC}s)...")
-    seq_counter = 0
+    print(f"\n[START] Starting telemetry broadcast (Interval: {config.TX_INTERVAL_SEC}s, DeepSleep: {getattr(config, 'ENABLE_DEEP_SLEEP', False)})...")
 
     while True:
         try:
@@ -92,7 +132,9 @@ def main():
             pm1_0, pm2_5, pm10 = apm.read()
 
             # Terminal log
-            print(f"[{timestamp}] Node #{config.NODE_ID} | Temp: {temp}°C | Hum: {hum}% | Lux: {lux} | UVI: {uvi} | PM1.0: {pm1_0} | PM2.5: {pm2_5} | PM10: {pm10}")
+            print(
+                f"[{timestamp}] Node #{config.NODE_ID} | Temp: {temp}°C | Hum: {hum}% | Lux: {lux} | UVI: {uvi} | PM1.0: {pm1_0} | PM2.5: {pm2_5} | PM10: {pm10}"
+            )
 
             # Assemble packet
             pkt = WeatherPacket.create(
@@ -107,15 +149,16 @@ def main():
                 pm25=pm2_5 if pm2_5 is not None else 0,
                 pm10=pm10 if pm10 is not None else 0,
                 pm1=pm1_0 if pm1_0 is not None else 0,
-                hops=0
+                hops=0,
             )
 
+            # Encode as compact 20-byte binary packet
             raw_bytes = WeatherPacket.encode(pkt)
 
             # Transmit via LoRa
             if lora_ok and raw_bytes:
                 led.flash_blue(100)  # Blue flash on transmit
-                success = lora.send(raw_bytes, timeout_ms=3000)
+                success = lora.send(raw_bytes, timeout_ms=30000)
                 if success:
                     print(f"  -> LoRa TX Success (Seq #{seq_counter}, {len(raw_bytes)} bytes)")
                     led.set_green()
@@ -125,13 +168,36 @@ def main():
             else:
                 led.set_red()
 
-            seq_counter = (seq_counter + 1) % 65536
-            time.sleep(config.TX_INTERVAL_SEC)
+            # Increment sequence counter and persist to RTC memory
+            next_seq = (seq_counter + 1) % 65536
+            save_seq_counter(next_seq)
+
+            # Sleep Management
+            if getattr(config, "ENABLE_DEEP_SLEEP", False):
+                # Put radio to ultra-low-power sleep (~0.2 uA)
+                if lora_ok:
+                    lora.sleep()
+
+                # Extinguish status LED
+                led.turn_off()
+
+                print(f"[PWR] Entering Deep Sleep for {config.TX_INTERVAL_SEC} seconds...\n")
+                time.sleep_ms(100)  # Flush UART TX buffer
+                machine.deepsleep(config.TX_INTERVAL_SEC * 1000)
+            else:
+                seq_counter = next_seq
+                time.sleep(config.TX_INTERVAL_SEC)
 
         except Exception as e:
             print("[ERR] Exception in Node main loop:", e)
             led.set_red()
-            time.sleep(5)
+            if getattr(config, "ENABLE_DEEP_SLEEP", False):
+                time.sleep_ms(2000)
+                led.turn_off()
+                machine.deepsleep(config.TX_INTERVAL_SEC * 1000)
+            else:
+                time.sleep(5)
+
 
 if __name__ == "__main__":
     main()

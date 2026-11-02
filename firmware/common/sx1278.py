@@ -140,8 +140,12 @@ class SX1278:
         # Set LNA Boost
         self._write_reg(self.REG_LNA, self._read_reg(self.REG_LNA) | 0x03)
 
-        # Auto AGC
-        self._write_reg(self.REG_MODEM_CONFIG_3, 0x04)
+        # Auto AGC & Low Data Rate Optimization (LDRO mandatory if symbol duration > 16ms)
+        bw_hz_list = [7800, 10400, 15600, 20800, 31250, 41700, 62500, 125000, 250000, 500000]
+        bw_hz = bw_hz_list[bw] if (isinstance(bw, int) and 0 <= bw < len(bw_hz_list)) else 125000
+        sym_duration_ms = (1 << sf) * 1000 / bw_hz
+        ldro = 0x08 if sym_duration_ms > 16 else 0x00
+        self._write_reg(self.REG_MODEM_CONFIG_3, 0x04 | ldro)
 
         # Set Modem Config 1: [BW: 4 bits] | [CR: 3 bits] | [HeaderMode: 1 bit (0=explicit)]
         cr_bits = max(1, min(4, cr - 4))
@@ -164,7 +168,9 @@ class SX1278:
         # Clear IRQ flags
         self._write_reg(self.REG_IRQ_FLAGS, 0xFF)
 
-        print(f"[OK] SX1278 LoRa initialized! Freq: {freq:.2f} MHz | SF: {sf} | BW: 125kHz | Power: {power}dBm")
+        bw_str = f"{bw_hz/1000:.1f}kHz"
+        ldro_str = "ON" if ldro else "OFF"
+        print(f"[OK] SX1278 LoRa initialized! Freq: {freq:.2f} MHz | SF: {sf} | BW: {bw_str} | CR: 4/{cr_bits+4} | Power: {power}dBm | LDRO: {ldro_str}")
         return True
 
     def set_frequency(self, freq_mhz):
@@ -185,7 +191,7 @@ class SX1278:
             self._write_reg(self.REG_PA_DAC, 0x84)
             self._write_reg(self.REG_PA_CONFIG, 0x80 | (power_dbm - 2))
 
-    def send(self, data, timeout_ms=3000):
+    def send(self, data, timeout_ms=30000):
         """
         Transmits a bytes or string payload.
         Blocks until TxDone or timeout.
@@ -272,3 +278,8 @@ class SX1278:
         # Clear IRQ and keep receiving
         self._write_reg(self.REG_IRQ_FLAGS, 0xFF)
         return payload, rssi, snr
+
+    def sleep(self):
+        """Puts SX1278 into ultra-low-power sleep mode (~0.2 uA)."""
+        self._write_reg(self.REG_OP_MODE, self.MODE_LONG_RANGE_MODE | self.MODE_SLEEP)
+

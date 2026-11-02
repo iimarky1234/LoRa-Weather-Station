@@ -16,11 +16,18 @@ PIN_SD_MOSI = 35
 PIN_SD_CS = 4
 
 
+#   LORA_FREQ = 434.0  # 434.0 MHz
+#   LORA_BW = 7  # 125 kHz
+#   LORA_SF = 9  # Spreading factor 9
+#   LORA_CR = 7  # Coding rate 4/7
+#   LORA_POWER = 14
+
 LORA_FREQ = 434.0  # 434.0 MHz
-LORA_BW = 7  # 125 kHz
-LORA_SF = 9  # Spreading factor 9
-LORA_CR = 7  # Coding rate 4/7
-LORA_POWER = 14
+LORA_BW = 2  # 15.6 kHz
+LORA_SF = 12  # Spreading factor 12
+LORA_CR = 5  # Coding rate 4/5
+LORA_POWER = 20
+
 
 # Storage & Logging (MicroSD with Onboard Flash Fallback)
 LOG_FILE_PATH = "/sd/gateway_weather_log.csv"
