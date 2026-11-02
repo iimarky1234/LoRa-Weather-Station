@@ -50,7 +50,6 @@ INTERVAL_SEC = 20
 # ThingSpeak Cloud IoT Configuration (Channel 1)
 THINGSPEAK_CHANNEL_ID         = "3543024"
 THINGSPEAK_API_KEY            = "L6L7UKBD93OYKONW"  # Write API Key
-THINGSPEAK_READ_KEY           = "WK8Z6FH8W8UTJS7Q"  # Read API Key
 THINGSPEAK_HOST               = "api.thingspeak.com"
 THINGSPEAK_PORT               = 80
 THINGSPEAK_FAIL_THRESHOLD     = 3
