@@ -152,7 +152,7 @@ def main():
                 hops=0,
             )
 
-            # Encode as compact 20-byte binary packet
+            # Encode as compact 24-byte binary packet (with 32-bit Unix timestamp)
             raw_bytes = WeatherPacket.encode(pkt)
 
             # Transmit via LoRa

@@ -1,6 +1,6 @@
 # ==============================================================================
 # LoRa Weather Station Communication Protocol
-# Optimized 20-Byte Binary & JSON packet serialization, deserialization, and validation
+# Optimized 24-Byte Binary (with Unix Timestamp) & JSON packet serialization
 # ==============================================================================
 try:
     import ustruct as struct
@@ -10,11 +10,12 @@ import json
 import time
 
 class WeatherPacket:
-    # 20-Byte Binary Format:
+    # 24-Byte Binary Format:
     # < = Little Endian
     # B: node_id (uint8, 1B)
     # H: seq (uint16, 2B)
     # B: hops (uint8, 1B)
+    # I: timestamp epoch (uint32, 4B)
     # h: temp * 100 (int16 signed, 2B)
     # H: hum * 100 (uint16, 2B)
     # H: lux (uint16, 2B)
@@ -23,15 +24,77 @@ class WeatherPacket:
     # H: pm1 (uint16, 2B)
     # H: pm25 (uint16, 2B)
     # H: pm10 (uint16, 2B)
-    # Total = 1 + 2 + 1 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 20 bytes
-    BINARY_FMT = "<BHBhHHHHHHH"
-    BINARY_SIZE = 20
+    # Total = 1 + 2 + 1 + 4 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 = 24 bytes
+    BINARY_FMT_24B = "<BHBIhHHHHHHH"
+    BINARY_SIZE_24B = 24
+
+    # Legacy 20-Byte Binary Format (backward compatibility)
+    BINARY_FMT_20B = "<BHBhHHHHHHH"
+    BINARY_SIZE_20B = 20
+
+    @staticmethod
+    def _iso_to_epoch(ts_str):
+        """Converts 'YYYY-MM-DD HH:MM:SS' or int timestamp to 32-bit Unix epoch seconds."""
+        try:
+            if isinstance(ts_str, (int, float)):
+                return int(ts_str) & 0xFFFFFFFF
+            ts_str = str(ts_str).strip()
+            date_part, time_part = ts_str.split(" ")
+            y, m, d = [int(x) for x in date_part.split("-")]
+            h, mn, s = [int(x) for x in time_part.split(":")]
+            
+            days_before_month = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+            y_adj = y - (1 if m <= 2 else 0)
+            leaps = (y_adj // 4) - (y_adj // 100) + (y_adj // 400) - 477
+            total_days = (y - 1970) * 365 + days_before_month[m - 1] + (d - 1) + leaps
+            epoch = total_days * 86400 + h * 3600 + mn * 60 + s
+            return int(epoch) & 0xFFFFFFFF
+        except Exception:
+            try:
+                return int(time.time()) & 0xFFFFFFFF
+            except Exception:
+                return 0
+
+    @staticmethod
+    def _epoch_to_iso(epoch):
+        """Converts 32-bit Unix epoch seconds to 'YYYY-MM-DD HH:MM:SS' string."""
+        if epoch <= 0:
+            return "1970-01-01 00:00:00"
+        s = epoch % 60
+        epoch //= 60
+        mn = epoch % 60
+        epoch //= 60
+        h = epoch % 24
+        days = epoch // 24
+        
+        y = 1970 + int(days / 365.2425)
+        while True:
+            y_adj = y - 1
+            leaps = (y_adj // 4) - (y_adj // 100) + (y_adj // 400) - 477
+            day_of_y = days - ((y - 1970) * 365 + leaps)
+            if day_of_y < 0:
+                y -= 1
+            else:
+                is_leap = 1 if ((y % 4 == 0 and y % 100 != 0) or (y % 400 == 0)) else 0
+                days_in_year = 366 if is_leap else 365
+                if day_of_y >= days_in_year:
+                    y += 1
+                else:
+                    break
+        is_leap = 1 if ((y % 4 == 0 and y % 100 != 0) or (y % 400 == 0)) else 0
+        days_in_months = [31, 29 if is_leap else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        m = 1
+        for dim in days_in_months:
+            if day_of_y < dim:
+                break
+            day_of_y -= dim
+            m += 1
+        d = day_of_y + 1
+        return "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(y, m, d, h, mn, s)
 
     @staticmethod
     def create(node_id, seq, timestamp, temp, hum, lux, uv_raw=0, uvi=0.0, pm25=0, pm10=0, pm1=0, hops=0):
-        """
-        Builds a structured telemetry packet dict ready for LoRa transmission.
-        """
+        """Builds a structured telemetry packet dict ready for LoRa transmission."""
         return {
             "node_id": int(node_id),
             "seq": int(seq),
@@ -53,7 +116,7 @@ class WeatherPacket:
     def encode(cls, packet_dict, binary=True):
         """
         Encodes packet dict.
-        Default is ultra-compact 20-byte binary packet.
+        Default is ultra-compact 24-byte binary packet (with 4-byte Unix timestamp).
         Set binary=False for legacy JSON.
         """
         try:
@@ -77,11 +140,14 @@ class WeatherPacket:
                 pm25_val = int(min(max(int(p25) if p25 is not None else 0, 0), 65535))
                 pm10_val = int(min(max(int(p10) if p10 is not None else 0, 0), 65535))
 
+                epoch_sec = cls._iso_to_epoch(packet_dict.get("time", ""))
+
                 return struct.pack(
-                    cls.BINARY_FMT,
+                    cls.BINARY_FMT_24B,
                     int(packet_dict.get("node_id", 1)) & 0xFF,
                     int(packet_dict.get("seq", 0)) & 0xFFFF,
                     int(packet_dict.get("hops", 0)) & 0xFF,
+                    int(epoch_sec) & 0xFFFFFFFF,
                     t_raw,
                     h_raw,
                     lux_val,
@@ -101,7 +167,8 @@ class WeatherPacket:
     def decode(cls, raw_bytes):
         """
         Decodes raw bytes into packet dict.
-        Automatically handles both 20-byte binary packets and JSON strings.
+        Automatically handles 24-byte binary (with node timestamp),
+        20-byte legacy binary, and JSON strings.
         """
         try:
             if not raw_bytes:
@@ -109,10 +176,34 @@ class WeatherPacket:
             if isinstance(raw_bytes, (bytearray, memoryview)):
                 raw_bytes = bytes(raw_bytes)
 
-            # Auto-detect 20-byte binary packet
-            if len(raw_bytes) == cls.BINARY_SIZE and not raw_bytes.startswith(b'{'):
+            # Auto-detect 24-byte binary packet (with Timestamp)
+            if len(raw_bytes) == cls.BINARY_SIZE_24B and not raw_bytes.startswith(b'{'):
+                node_id, seq, hops, epoch_sec, t_raw, h_raw, lux, uv_raw, uvi_raw, pm1, pm25, pm10 = struct.unpack(
+                    cls.BINARY_FMT_24B, raw_bytes
+                )
+                timestamp = cls._epoch_to_iso(epoch_sec)
+
+                return {
+                    "node_id": int(node_id),
+                    "seq": int(seq),
+                    "hops": int(hops),
+                    "time": timestamp,
+                    "data": {
+                        "temp": round(t_raw / 100.0, 2),
+                        "hum": round(h_raw / 100.0, 2),
+                        "lux": float(lux),
+                        "uv_raw": int(uv_raw),
+                        "uvi": round(uvi_raw / 100.0, 2),
+                        "pm1": int(pm1),
+                        "pm25": int(pm25),
+                        "pm10": int(pm10)
+                    }
+                }
+
+            # Auto-detect 20-byte legacy binary packet (without Timestamp)
+            if len(raw_bytes) == cls.BINARY_SIZE_20B and not raw_bytes.startswith(b'{'):
                 node_id, seq, hops, t_raw, h_raw, lux, uv_raw, uvi_raw, pm1, pm25, pm10 = struct.unpack(
-                    cls.BINARY_FMT, raw_bytes
+                    cls.BINARY_FMT_20B, raw_bytes
                 )
                 try:
                     now = time.localtime()
