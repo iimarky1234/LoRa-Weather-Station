@@ -17,17 +17,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-<!-- Google Material Symbols Icons -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-
 <style>
-.material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  vertical-align: middle;
-  line-height: 1;
-  display: inline-block;
-}
-
 :root {
   --bg: #0f172a;
   --card: #1e293b;
@@ -523,8 +513,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   <header>
     <div>
       <h1>
-        <span class="material-symbols-outlined" style="font-size:1.6rem;color:var(--accent);">sensors</span>
-        Weather Station
+        📡 Weather Station
         <span class="badge-group">
           <span class="badge badge-cloud">Cloud IoT</span>
           <span class="badge badge-node">Node 1</span>
@@ -544,7 +533,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   <div class="map-card">
     <div class="map-header">
       <div class="map-title" style="display:flex;align-items:center;gap:6px;">
-        <span class="material-symbols-outlined" style="font-size:1.2rem;color:var(--accent);">map</span>
+        <span>🗺️</span>
         <span>Station Location (Node #1)</span>
         <span style="font-size:0.75rem;color:var(--subtext);font-weight:normal;">(Field deployment coordinates)</span>
       </div>
@@ -569,23 +558,20 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
     <div class="actions">
       <span style="font-size:0.78rem;color:var(--subtext);" id="lblCountdown">Next sync: 20s</span>
       <button class="btn btn-outline" id="btnAuto" onclick="toggleAutoSync()">
-        <span class="material-symbols-outlined" id="iconAuto" style="font-size:1.05rem;">pause</span>
-        <span id="lblAuto">Pause</span>
+        <span id="lblAuto">⏸️ Pause</span>
       </button>
       <button class="btn btn-primary" onclick="syncNode(true)">
-        <span class="material-symbols-outlined" style="font-size:1.05rem;">sync</span>
-        <span>Sync Now</span>
+        <span>🔄 Sync Now</span>
       </button>
       <button class="btn btn-install" id="btnInstall" onclick="promptInstall()">
-        <span class="material-symbols-outlined" style="font-size:1.05rem;">install_mobile</span>
-        <span>Install App</span>
+        <span>📲 Install App</span>
       </button>
     </div>
   </div>
 
   <!-- Offline Warning Banner -->
   <div id="offlineBanner" class="offline-banner">
-    <span class="material-symbols-outlined" style="font-size:1.15rem;color:#fca5a5;">warning</span>
+    <span>⚠️</span>
     <span id="offlineBannerText">Node is Offline - Showing cached readings</span>
   </div>
 
@@ -595,20 +581,16 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   <!-- Status Summary Box -->
   <div class="status-box">
     <div class="status-item">
-      <span class="material-symbols-outlined" style="font-size:1.05rem;color:var(--subtext);">label</span>
-      <strong>Station:</strong> <span id="lblActiveStation" style="color:var(--accent);">Node 1</span>
+      🏷️ <strong>Station:</strong> <span id="lblActiveStation" style="color:var(--accent);">Node 1</span>
     </div>
     <div class="status-item">
-      <span class="material-symbols-outlined" style="font-size:1.05rem;color:var(--subtext);">schedule</span>
-      <strong>Latest Reading:</strong> <span id="valTime" style="color:#f8fafc;">--</span>
+      🕒 <strong>Latest Reading:</strong> <span id="valTime" style="color:#f8fafc;">--</span>
     </div>
     <div class="status-item">
-      <span class="material-symbols-outlined" style="font-size:1.05rem;color:var(--subtext);">cloud</span>
-      <strong>Channel:</strong> <span id="valChannel" style="color:#a78bfa;">#3543024</span>
+      ☁️ <strong>Channel:</strong> <span id="valChannel" style="color:#a78bfa;">#3543024</span>
     </div>
     <div class="status-item">
-      <span class="material-symbols-outlined" style="font-size:1.05rem;color:var(--subtext);">tag</span>
-      <strong>Last Entry:</strong> <span id="valEntry" style="color:var(--green);">#0</span>
+      🔖 <strong>Last Entry:</strong> <span id="valEntry" style="color:var(--green);">#0</span>
     </div>
   </div>
 
@@ -616,7 +598,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   <div class="chart-card">
     <div class="chart-header">
       <h3 style="font-size:0.95rem;color:#f1f5f9;display:flex;align-items:center;gap:6px;">
-        <span class="material-symbols-outlined" style="font-size:1.15rem;color:var(--accent);">show_chart</span>
+        <span>📈</span>
         <span>Historical Telemetry Trends (Recent Feeds)</span>
       </h3>
       <div class="chart-toggle-group" id="chartToggleGroup"></div>
@@ -628,7 +610,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   <div class="table-card">
     <div class="table-header" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
       <h3 style="font-size:0.95rem;color:#f1f5f9;display:flex;align-items:center;gap:6px;">
-        <span class="material-symbols-outlined" style="font-size:1.15rem;color:var(--accent);">table_chart</span>
+        <span>📋</span>
         <span>Telemetry Log History (<span id="lblTableNode">Node 1</span>)</span>
       </h3>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -652,8 +634,7 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
           </select>
           <button class="btn btn-outline" id="btnDownloadLog" style="padding:3px 10px;font-size:0.75rem;display:inline-flex;align-items:center;gap:4px;" onclick="downloadSpecificAmountLogs()">
             <span id="btnDownloadSpinner" style="display:none;">⏳</span>
-            <span class="material-symbols-outlined" id="iconDownload" style="font-size:1rem;">download</span>
-            <span id="btnDownloadText">Download CSV</span>
+            <span id="btnDownloadText">💾 Download CSV</span>
           </button>
         </div>
       </div>
@@ -679,14 +660,14 @@ const NODE = {
   lon: null,
   color: "#38bdf8",
   fields: [
-    { field: "field1", label: "Temperature", unit: "°C", icon: "thermostat", color: "#f97316", min: 0, max: 50, decimals: 1 },
-    { field: "field2", label: "Humidity", unit: "%", icon: "water_drop", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
-    { field: "field3", label: "Ambient Light", unit: "Lux", icon: "light_mode", color: "#eab308", min: 0, max: 2000, decimals: 0 },
-    { field: "field4", label: "UV Index", unit: "UVI", icon: "wb_sunny", color: "#a855f7", min: 0, max: 12, decimals: 2 },
-    { field: "field5", label: "PM2.5 Dust", unit: "µg/m³", icon: "air", color: "#ef4444", min: 0, max: 150, decimals: 0 },
-    { field: "field6", label: "PM10 Coarse", unit: "µg/m³", icon: "foggy", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
-    { field: "field7", label: "PM1.0 Fine", unit: "µg/m³", icon: "grain", color: "#fb7185", min: 0, max: 150, decimals: 0 },
-    { field: "field8", label: "Soil Moisture", unit: "%", icon: "potted_plant", color: "#10b981", min: 0, max: 100, decimals: 1 }
+    { field: "field1", label: "Temperature", unit: "°C", icon: "🌡️", color: "#f97316", min: 0, max: 50, decimals: 1 },
+    { field: "field2", label: "Humidity", unit: "%", icon: "💧", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
+    { field: "field3", label: "Ambient Light", unit: "Lux", icon: "☀️", color: "#eab308", min: 0, max: 2000, decimals: 0 },
+    { field: "field4", label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
+    { field: "field5", label: "PM2.5 Dust", unit: "µg/m³", icon: "🌫️", color: "#ef4444", min: 0, max: 150, decimals: 0 },
+    { field: "field6", label: "PM10 Coarse", unit: "µg/m³", icon: "🌪️", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
+    { field: "field7", label: "PM1.0 Fine", unit: "µg/m³", icon: "🔬", color: "#fb7185", min: 0, max: 150, decimals: 0 },
+    { field: "field8", label: "Soil Moisture", unit: "%", icon: "🌱", color: "#10b981", min: 0, max: 100, decimals: 1 }
   ]
 };
 
@@ -813,13 +794,13 @@ function buildPopupHtml() {
   NODE.fields.slice(0, 6).forEach(f => {
     const val = parseVal(d[f.field]);
     const str = val !== null ? `${val.toFixed(f.decimals || 0)} ${f.unit}` : '--';
-    fieldsHtml += `<div class="popup-item"><span><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;margin-right:3px;">${f.icon}</span>${f.label}</span><strong>${str}</strong></div>`;
+    fieldsHtml += `<div class="popup-item"><span><span style="margin-right:4px;">${f.icon}</span>${f.label}</span><strong>${str}</strong></div>`;
   });
 
   return `
     <div class="popup-node-card">
       <div class="popup-title">
-        <span style="display:inline-flex;align-items:center;gap:4px;"><span class="material-symbols-outlined" style="font-size:16px;color:var(--accent);">location_on</span> ${NODE.name}</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;">📍 ${NODE.name}</span>
         ${statusBadge}
       </div>
       <div style="font-size:0.72rem;color:#94a3b8;margin-bottom:4px;">
@@ -946,10 +927,8 @@ function startCountdown() {
 
 function toggleAutoSync() {
   autoSync = !autoSync;
-  const icon = document.getElementById('iconAuto');
   const lbl = document.getElementById('lblAuto');
-  if (icon) icon.innerText = autoSync ? "pause" : "play_arrow";
-  if (lbl) lbl.innerText = autoSync ? "Pause" : "Resume";
+  if (lbl) lbl.innerText = autoSync ? "⏸️ Pause" : "▶️ Resume";
   updateNodeStatusUI();
 }
 
@@ -1013,7 +992,7 @@ function renderTelemetryGrid() {
     card.innerHTML = `
       <div class="card-header">
         <span>${f.label}</span>
-        <span class="material-symbols-outlined" style="font-size:1.25rem;color:${f.color || 'var(--accent)'};">${f.icon || 'bar_chart'}</span>
+        <span style="font-size:1.25rem;">${f.icon || '📊'}</span>
       </div>
       <div class="card-val">
         <span>${strVal}</span>
@@ -1044,7 +1023,7 @@ function renderTelemetryGrid() {
   locCard.innerHTML = `
     <div class="card-header">
       <span>Station Location</span>
-      <span class="material-symbols-outlined" style="font-size:1.25rem;color:var(--accent);">location_on</span>
+      <span style="font-size:1.25rem;">📍</span>
     </div>
     <div class="card-val" style="font-size:1.1rem;margin-top:4px;">
       <span>${coordsDisplay}</span>
@@ -1071,7 +1050,7 @@ function renderChartControls() {
     btn.className = `btn-chart ${chartMetrics[f.field] ? 'active' : ''}`;
     btn.id = `btnChart_${f.field}`;
     btn.style.color = chartMetrics[f.field] ? (f.color || 'var(--accent)') : 'var(--subtext)';
-    btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:1rem;margin-right:4px;">${f.icon || 'bar_chart'}</span> ${f.label}`;
+    btn.innerHTML = `<span style="margin-right:4px;">${f.icon || '📊'}</span> ${f.label}`;
     btn.onclick = () => {
       chartMetrics[f.field] = !chartMetrics[f.field];
       btn.classList.toggle('active', chartMetrics[f.field]);
