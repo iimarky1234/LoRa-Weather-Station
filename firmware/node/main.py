@@ -23,6 +23,7 @@ from drivers.am2301b import AM2301B
 from drivers.ltr390 import LTR390
 from drivers.ds1307 import DS1307
 from drivers.apm10 import APM10
+from drivers.soil import SoilMoisture
 
 
 def get_seq_counter():
@@ -81,12 +82,18 @@ def main():
         rx_pin=config.PIN_APM10_RX,
         baudrate=config.APM10_BAUDRATE,
     )
+    soil = SoilMoisture(
+        pin=getattr(config, "PIN_SOIL_ADC", 6),
+        dry_mv=getattr(config, "SOIL_DRY_MV", 2800),
+        wet_mv=getattr(config, "SOIL_WET_MV", 1200)
+    )
 
     # Check connection states
     print(f"  * DS1307 RTC:       {'[ONLINE]' if rtc.is_connected() else '[OFFLINE]'}")
     print(f"  * BH1750 Light:     {'[ONLINE]' if bh.is_connected() else '[OFFLINE]'}")
     print(f"  * AM2301B Temp/Hum: {'[ONLINE]' if am.is_connected() else '[OFFLINE]'}")
     print(f"  * LTR390 UV Sensor: {'[ONLINE]' if ltr.is_connected() else '[OFFLINE]'}")
+    print(f"  * Soil Moisture:    [ONLINE] (ADC GPIO{getattr(config, 'PIN_SOIL_ADC', 6)})")
     print(
         f"  * APM10 PM Dust:    {'[ONLINE]' if apm.is_connected() else '[OFFLINE]'} (UART{config.UART_ID_APM10} TX:{config.PIN_APM10_TX}, RX:{config.PIN_APM10_RX})"
     )
@@ -130,10 +137,11 @@ def main():
             temp, hum = am.read()
             uv_raw, uvi = ltr.read_uv()
             pm1_0, pm2_5, pm10 = apm.read()
+            soil_pct, soil_mv = soil.read_percentage()
 
             # Terminal log
             print(
-                f"[{timestamp}] Node #{config.NODE_ID} | Temp: {temp}°C | Hum: {hum}% | Lux: {lux} | UVI: {uvi} | PM1.0: {pm1_0} | PM2.5: {pm2_5} | PM10: {pm10}"
+                f"[{timestamp}] Node #{config.NODE_ID} | Temp: {temp}°C | Hum: {hum}% | Lux: {lux} | Soil: {soil_pct}% ({soil_mv}mV) | UVI: {uvi} | PM1.0: {pm1_0} | PM2.5: {pm2_5} | PM10: {pm10}"
             )
 
             # Assemble packet
@@ -144,6 +152,7 @@ def main():
                 temp=temp if temp is not None else 0.0,
                 hum=hum if hum is not None else 0.0,
                 lux=lux if lux is not None else 0.0,
+                soil_pct=soil_pct if soil_pct is not None else 0.0,
                 uv_raw=uv_raw if uv_raw is not None else 0,
                 uvi=uvi if uvi is not None else 0.0,
                 pm25=pm2_5 if pm2_5 is not None else 0,
@@ -152,7 +161,7 @@ def main():
                 hops=0,
             )
 
-            # Encode as compact 24-byte binary packet (with 32-bit Unix timestamp)
+            # Encode as compact 26-byte binary packet (with 32-bit Unix timestamp & Soil Moisture)
             raw_bytes = WeatherPacket.encode(pkt)
 
             # Transmit via LoRa

@@ -4,7 +4,7 @@ Autonomous, multi-sensor microclimate monitoring network built on the **ESP32-S3
 
 The project features three firmware targets and a cloud dashboard:
 
-1. **Sensor Node Firmware (`firmware/node/`):** Autonomous field acquisition node reading environmental sensors (temperature, humidity, ambient light, UV index, PM1.0, PM2.5, PM10) with ultra-low-power Deep Sleep cycling and broadcasting 24-byte binary LoRa telemetry packets.
+1. **Sensor Node Firmware (`firmware/node/`):** Autonomous field acquisition node reading 8 environmental sensors (temperature, humidity, ambient light, soil moisture, UV index, PM1.0, PM2.5, PM10) with ultra-low-power Deep Sleep cycling and broadcasting 26-byte binary LoRa telemetry packets.
 2. **Central Gateway Firmware (`firmware/gateway/`):** Central receiver hub collecting packets from field nodes, logging records to MicroSD card (`/sd/gateway_weather_log.csv`) with automatic fallback to onboard 16MB SPI Flash (`/gateway_weather_log.csv`), routing data to ThingSpeak Cloud IoT channels, and hosting an offline local web service.
 3. **Standalone Station Firmware (`firmware/standalone/`):** All-in-one field-to-cloud station reading the onboard sensors directly, synchronizing time with NTP, logging to MicroSD/Flash, streaming to ThingSpeak, and hosting a local failover dashboard (no LoRa required).
 4. **Interactive Web Dashboard (`webapp/index.html`):** Progressive Web App (PWA) hosted at [https://weather.iimarky123.io.vn](https://weather.iimarky123.io.vn) featuring Leaflet.js CARTO Dark Matter mapping, dynamic real-time node coordinates, isolated node switching tabs, configurable log exports, and historical telemetry charts.
@@ -41,11 +41,11 @@ Both the Sensor Node and Central Gateway operate on matching Semtech SX1278 tran
 
 ---
 
-## 24-Byte Binary Communication Protocol
+## 26-Byte Binary Communication Protocol
 
 The network uses a packed C-style binary struct (`ustruct`) for telemetry transmission over LoRa.
 
-* **Format String:** `"<BHBIhHHHHHHH"` (Little-Endian, Total: **24 Bytes**)
+* **Format String:** `"<BHBIhHHHHHHHH"` (Little-Endian, Total: **26 Bytes**)
 
 ### Byte Offset Mapping
 
@@ -58,11 +58,12 @@ The network uses a packed C-style binary struct (`ustruct`) for telemetry transm
 | `8 – 9` | **Temperature** | `int16` | 2 B | `temp * 100` (`h`, signed) | -327.68°C to +327.67°C (0.01°C) |
 | `10 – 11` | **Humidity** | `uint16` | 2 B | `hum * 100` (`H`) | 0.00% to 100.00% (0.01%) |
 | `12 – 13` | **Ambient Light** | `uint16` | 2 B | Raw Lux (`H`) | 0 to 65,535 Lux |
-| `14 – 15` | **UV Raw** | `uint16` | 2 B | Raw ADC count (`H`) | 0 to 4,095 |
-| `16 – 17` | **UV Index** | `uint16` | 2 B | `uvi * 100` (`H`) | 0.00 to 655.35 (0.01 step) |
-| `18 – 19` | **PM 1.0** | `uint16` | 2 B | PM1.0 integer (`H`) | 0 to 65,535 µg/m³ |
-| `20 – 21` | **PM 2.5** | `uint16` | 2 B | PM2.5 integer (`H`) | 0 to 65,535 µg/m³ |
-| `22 – 23` | **PM 10** | `uint16` | 2 B | PM10 integer (`H`) | 0 to 65,535 µg/m³ |
+| `14 – 15` | **Soil Moisture** | `uint16` | 2 B | `soil_pct * 100` (`H`) | 0.00% to 100.00% (0.01%) |
+| `16 – 17` | **UV Raw** | `uint16` | 2 B | Raw ADC count (`H`) | 0 to 4,095 |
+| `18 – 19` | **UV Index** | `uint16` | 2 B | `uvi * 100` (`H`) | 0.00 to 655.35 (0.01 step) |
+| `20 – 21` | **PM 1.0** | `uint16` | 2 B | PM1.0 integer (`H`) | 0 to 65,535 µg/m³ |
+| `22 – 23` | **PM 2.5** | `uint16` | 2 B | PM2.5 integer (`H`) | 0 to 65,535 µg/m³ |
+| `24 – 25` | **PM 10** | `uint16` | 2 B | PM10 integer (`H`) | 0 to 65,535 µg/m³ |
 
 ---
 
@@ -70,7 +71,7 @@ The network uses a packed C-style binary struct (`ustruct`) for telemetry transm
 
 The Sensor Node implements an ultra-low-power sleep architecture:
 
-1. **Sensor Acquisition & LoRa TX:** The ESP32-S3 boots, reads all I2C/UART sensors, encodes the 24-byte packet, and broadcasts over LoRa.
+1. **Sensor Acquisition & LoRa TX:** The ESP32-S3 boots, reads all I2C/UART/ADC sensors, encodes the 26-byte packet, and broadcasts over LoRa.
 2. **Sequence Persistence:** Because standard RAM is cleared during deep sleep, the monotonic sequence number is preserved in **ESP32 RTC memory** (`machine.RTC().memory()`) across sleep resets.
 3. **Radio Sleep:** The transceiver's analog circuitry is explicitly shut down via `lora.sleep()` (`MODE_SLEEP`), dropping radio current to **~0.2 µA**.
 4. **LED Power-Down:** The onboard WS2812 status LED is turned off (`led.turn_off()`) prior to sleep.
@@ -84,14 +85,16 @@ The Sensor Node implements an ultra-low-power sleep architecture:
 
 | Peripheral / Signal | ESP32-S3 Pin | Pin No. | Connected Device / Pin | Description / Protocol |
 | :--- | :--- | :---: | :--- | :--- |
-| **I2C SDA** | `GPIO8` | 12 | DS1307, BH1750, LTR390, AM2301B, APM10 (via LLC) | Shared I2C Data (100 kHz) |
-| **I2C SCL** | `GPIO9` | 15 | DS1307, BH1750, LTR390, AM2301B, APM10 (via LLC) | Shared I2C Clock (100 kHz) |
+| **I2C SDA** | `GPIO8` | 12 | DS1307, BH1750, LTR390, AM2301B | Shared I2C Data (100 kHz) |
+| **I2C SCL** | `GPIO9` | 15 | DS1307, BH1750, LTR390, AM2301B | Shared I2C Clock (100 kHz) |
+| **UART TX (APM10)** | `GPIO10` | 16 | APM10 RX (via LLC) | UART1 Transmit (1200 baud) |
+| **UART RX (APM10)** | `GPIO14` | 20 | APM10 TX (via LLC) | UART1 Receive (1200 baud) |
 | **LoRa SCK** | `GPIO18` | 11 | Ra-02 (SX1278) `SCK` | SPI Clock |
 | **LoRa MOSI** | `GPIO11` | 17 | Ra-02 (SX1278) `MOSI` | SPI MOSI |
 | **LoRa MISO** | `GPIO13` | 19 | Ra-02 (SX1278) `MISO` | SPI MISO |
 | **LoRa NSS / CS** | `GPIO2` | 39 | Ra-02 (SX1278) `NSS` | LoRa SPI Chip Select |
 | **LoRa RESET** | `GPIO3` | 13 | Ra-02 (SX1278) `RESET` | Active-Low Hardware Reset |
-| **LoRa DIO0** | `GPIO6` | 6 | Ra-02 (SX1278) `DIO1/DIO0` | Packet RX/TX Done Interrupt |
+| **Soil Moisture ADC** | `GPIO6` | 6 | Soil Moisture Sensor AO | Analog ADC (`ADC1_CH5`, 0–3.3V) |
 | **Status RGB LED** | `GPIO48` / `GPIO38` | Internal | Onboard WS2812 NeoPixel | Blue flash on TX, Green online |
 | **3.3V Rail** | `3V3` | 1 | Sensors, RTC, LLC LV, Ra-02 | Main 3.3V Supply |
 | **5.0V Rail** | `5V` | 21 | APM10 VCC, LLC HV | Main 5.0V Supply (from USB/Regulator) |
@@ -101,13 +104,16 @@ The Sensor Node implements an ultra-low-power sleep architecture:
 
 | Peripheral / Signal | ESP32-S3 Pin | Pin No. | Connected Device / Pin | Description / Protocol |
 | :--- | :--- | :---: | :--- | :--- |
-| **SPI SCK** | `GPIO18` | 11 | Ra-02 `SCK`, MicroSD `SCK` | Shared SPI Bus Clock |
-| **SPI MOSI** | `GPIO11` | 17 | Ra-02 `MOSI`, MicroSD `MOSI` | Shared SPI Bus MOSI |
-| **SPI MISO** | `GPIO13` | 19 | Ra-02 `MISO`, MicroSD `MISO` | Shared SPI Bus MISO |
-| **LoRa NSS / CS** | `GPIO2` | 39 | Ra-02 `NSS` | LoRa Dedicated SPI CS |
-| **LoRa RESET** | `GPIO3` | 13 | Ra-02 `RESET` | LoRa Reset Pin |
-| **LoRa DIO0** | `GPIO6` | 6 | Ra-02 `DIO1/DIO0` | LoRa RX/TX Interrupt |
-| **MicroSD CS** | `GPIO10` | 16 | MicroSD Reader `CS` | MicroSD Dedicated SPI CS |
+| **LoRa SCK** | `GPIO18` | 11 | Ra-02 (SX1278) `SCK` | Dedicated SPI1 Bus Clock |
+| **LoRa MOSI** | `GPIO11` | 17 | Ra-02 (SX1278) `MOSI` | Dedicated SPI1 Bus MOSI |
+| **LoRa MISO** | `GPIO13` | 19 | Ra-02 (SX1278) `MISO` | Dedicated SPI1 Bus MISO |
+| **LoRa NSS / CS** | `GPIO2` | 39 | Ra-02 (SX1278) `NSS` | LoRa Dedicated SPI1 CS |
+| **LoRa RESET** | `GPIO3` | 13 | Ra-02 (SX1278) `RESET` | Active-Low Hardware Reset |
+| **LoRa DIO0** | `GPIO6` | 6 | Ra-02 (SX1278) `DIO1/DIO0` | LoRa RX/TX Interrupt |
+| **MicroSD SCK** | `GPIO36` | 27 | MicroSD Module `SCK` | Dedicated SPI2 Bus Clock |
+| **MicroSD MOSI** | `GPIO35` | 26 | MicroSD Module `MOSI` | Dedicated SPI2 Bus MOSI |
+| **MicroSD MISO** | `GPIO37` | 28 | MicroSD Module `MISO` | Dedicated SPI2 Bus MISO |
+| **MicroSD CS** | `GPIO4` | 8 | MicroSD Module `CS` | MicroSD Dedicated SPI2 CS |
 | **Status RGB LED** | `GPIO48` / `GPIO38` | Internal | Onboard WS2812 NeoPixel | Visual System State |
 
 ---
@@ -116,7 +122,7 @@ The Sensor Node implements an ultra-low-power sleep architecture:
 
 The Central Gateway implements fault-tolerant persistent storage:
 
-1. **Primary Medium (MicroSD Card):** Mounts at `/sd` via `GPIO10` Chip Select on SPI bus 1 and logs to `/sd/gateway_weather_log.csv`.
+1. **Primary Medium (MicroSD Card):** Mounts at `/sd` via `GPIO4` Chip Select on dedicated SPI bus 2 (`GPIO36` SCK, `GPIO35` MOSI, `GPIO37` MISO) and logs to `/sd/gateway_weather_log.csv`.
 2. **Automatic Fallback (Internal SPI Flash):** If the MicroSD card fails to mount on boot or errors during runtime write operations, the gateway automatically switches to the onboard 16MB SPI flash memory (`/gateway_weather_log.csv`).
 3. **RAM Ring Buffer:** Retains the 50 most recent records in memory for immediate web dashboard rendering and instant historical review.
 4. **Local Web Server Integration:**
@@ -159,10 +165,11 @@ The Central Gateway implements fault-tolerant persistent storage:
 * **Field 1:** Temperature (°C) — *AM2301B*
 * **Field 2:** Relative Humidity (%) — *AM2301B*
 * **Field 3:** Ambient Light (Lux) — *BH1750*
-* **Field 4:** Soil Moisture (%) — *Analog ADC*
-* **Field 5:** Ultraviolet Index (UVI) — *LTR390*
-* **Field 6:** Particulate Matter PM2.5 (µg/m³) — *APM10*
-* **Field 7:** Particulate Matter PM10 (µg/m³) — *APM10*
+* **Field 4:** Ultraviolet Index (UVI) — *LTR390*
+* **Field 5:** Particulate Matter PM2.5 (µg/m³) — *APM10*
+* **Field 6:** Particulate Matter PM10 (µg/m³) — *APM10*
+* **Field 7:** Particulate Matter PM1.0 (µg/m³) — *APM10*
+* **Field 8:** Soil Moisture (%) — *Analog ADC*
 
 ---
 

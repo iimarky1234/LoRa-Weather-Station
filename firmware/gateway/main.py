@@ -132,7 +132,7 @@ async def lora_receiver_task(lora, storage_mgr, web_server, led):
                         f"\n[LORA RX] {packet.get('time')} Node #{packet.get('node_id')} (Seq #{packet.get('seq')}, RSSI: {rssi}dBm, SNR: {snr:.1f}dB)"
                     )
                     print(
-                        f"          Temp: {dt.get('temp')}°C | Hum: {dt.get('hum')}% | Lux: {dt.get('lux')} | UVI: {dt.get('uvi')} | PM1.0: {dt.get('pm1')} | PM2.5: {dt.get('pm25')} | PM10: {dt.get('pm10')}"
+                        f"          Temp: {dt.get('temp')}°C | Hum: {dt.get('hum')}% | Lux: {dt.get('lux')} | Soil: {dt.get('soil_pct')}% | UVI: {dt.get('uvi')} | PM1.0: {dt.get('pm1')} | PM2.5: {dt.get('pm25')} | PM10: {dt.get('pm10')}"
                     )
 
                     # Attach RF link metrics to record
@@ -186,6 +186,7 @@ async def cloud_and_network_task(storage_mgr, web_server, ts_client, led):
                             d.get("pm25"),
                             d.get("pm10"),
                             d.get("pm1"),
+                            soil_pct=d.get("soil_pct", 0.0),
                             node_id=nid,
                         )
 
@@ -257,6 +258,7 @@ async def cloud_and_network_task(storage_mgr, web_server, ts_client, led):
                             d.get("pm25"),
                             d.get("pm10"),
                             d.get("pm1"),
+                            soil_pct=d.get("soil_pct", 0.0),
                             node_id=nid,
                         )
                         if success:

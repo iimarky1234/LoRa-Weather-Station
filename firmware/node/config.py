@@ -23,7 +23,12 @@ PIN_LORA_MOSI = 11
 PIN_LORA_MISO = 13
 PIN_LORA_CS = 2
 PIN_LORA_RST = 3
-PIN_LORA_DIO0 = 6  # DIO line connected to GPIO6
+PIN_LORA_DIO0 = None  # None: Frees GPIO6 for Soil Moisture ADC
+
+# Soil Moisture Sensor (Analog ADC on GPIO 6)
+PIN_SOIL_ADC = 6
+SOIL_DRY_MV = 2800  # Sensor voltage in air / dry (mV)
+SOIL_WET_MV = 1200  # Sensor voltage in water / wet (mV)
 
 # LoRa Radio Parameters
 #   LORA_FREQ = 434.0     # 434.0 MHz (Asia / Europe ISM)

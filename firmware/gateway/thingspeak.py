@@ -14,9 +14,9 @@ class GatewayThingSpeakClient:
         self.last_entry_id = 0
         self.total_uploads = 0
 
-    def upload(self, temp, hum, lux, uvi=0.0, pm25=0, pm10=0, pm1=0, node_id=1, write_key=None):
+    def upload(self, temp, hum, lux, uvi=0.0, pm25=0, pm10=0, pm1=0, soil_pct=0.0, node_id=1, write_key=None):
         """
-        Uploads telemetry fields 1-7 to ThingSpeak:
+        Uploads telemetry fields 1-8 to ThingSpeak:
           Field 1: Temperature (°C)
           Field 2: Relative Humidity (%)
           Field 3: Ambient Light / ALS (Lux)
@@ -24,6 +24,7 @@ class GatewayThingSpeakClient:
           Field 5: Particulate Matter PM2.5 (µg/m³)
           Field 6: Particulate Matter PM10 (µg/m³)
           Field 7: Particulate Matter PM1.0 (µg/m³)
+          Field 8: Soil Moisture (%)
         """
         s = None
         try:
@@ -38,7 +39,7 @@ class GatewayThingSpeakClient:
 
             path = ("/update?api_key={}"
                     "&field1={:.1f}&field2={:.1f}&field3={:.1f}&field4={:.2f}"
-                    "&field5={:d}&field6={:d}&field7={:d}").format(
+                    "&field5={:d}&field6={:d}&field7={:d}&field8={:.1f}").format(
                 target_key,
                 temp or 0.0,
                 hum or 0.0,
@@ -46,7 +47,8 @@ class GatewayThingSpeakClient:
                 uvi or 0.0,
                 int(pm25 or 0),
                 int(pm10 or 0),
-                int(pm1 or 0)
+                int(pm1 or 0),
+                soil_pct or 0.0
             )
 
             addr_info = socket.getaddrinfo(self.host, self.port)

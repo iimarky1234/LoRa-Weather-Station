@@ -104,7 +104,7 @@ class GatewayStorage:
 
             with open(self.active_log_path, "w") as f:
                 f.write(
-                    "timestamp,node_id,temperature_c,humidity_pct,light_lux,uv_index,pm25_ugm3,pm10_ugm3,pm1_ugm3,rssi,snr\n"
+                    "timestamp,node_id,temperature_c,humidity_pct,light_lux,soil_pct,uv_index,pm25_ugm3,pm10_ugm3,pm1_ugm3,rssi,snr\n"
                 )
             print(
                 f"[INFO] Created new Gateway CSV log on {self.storage_type.upper()}: {self.active_log_path}"
@@ -124,12 +124,13 @@ class GatewayStorage:
             return
 
         data = record.get("data", {})
-        line = "{},{},{},{},{},{},{},{},{},{},{}\n".format(
+        line = "{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
             record.get("time", ""),
             record.get("node_id", 0),
             data.get("temp", ""),
             data.get("hum", ""),
             data.get("lux", ""),
+            data.get("soil_pct", ""),
             data.get("uvi", ""),
             data.get("pm25", ""),
             data.get("pm10", ""),

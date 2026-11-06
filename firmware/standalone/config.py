@@ -17,6 +17,11 @@ PIN_SD_CS    = 10
 # SX1278 LoRa CS Pin (Held HIGH to keep transceiver unselected on shared SPI bus)
 PIN_LORA_CS = 2
 
+# Soil Moisture Sensor (Analog ADC on GPIO 6)
+PIN_SOIL_ADC = 6
+SOIL_DRY_MV  = 2800  # Sensor voltage in air / dry (mV)
+SOIL_WET_MV  = 1200  # Sensor voltage in water / wet (mV)
+
 # Status RGB LED (WS2812 NeoPixel)
 PIN_RGB_LED_PRIMARY   = 48
 PIN_RGB_LED_SECONDARY = 38
