@@ -430,25 +430,37 @@ h1 {
 
 .chart-toggle-group {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .btn-chart {
-  padding: 3px 8px;
-  font-size: 0.72rem;
-  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: #0f172a;
+  background: #090e1a;
   color: var(--subtext);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.btn-chart:hover {
+  transform: translateY(-1px);
 }
 .btn-chart.active {
-  background: #1e3a8a;
-  border-color: var(--accent);
+  color: #fff !important;
+}
+
+#telemetryChart {
+  width: 100%;
+  height: 290px;
+  display: block;
+  cursor: crosshair;
 }
 
 /* ==============================================================================
@@ -660,14 +672,14 @@ const NODE = {
   lon: null,
   color: "#38bdf8",
   fields: [
-    { field: "field1", label: "Temperature", unit: "°C", icon: "🌡️", color: "#f97316", min: 0, max: 50, decimals: 1 },
-    { field: "field2", label: "Humidity", unit: "%", icon: "💧", color: "#06b6d4", min: 0, max: 100, decimals: 0 },
-    { field: "field3", label: "Ambient Light", unit: "Lux", icon: "☀️", color: "#eab308", min: 0, max: 2000, decimals: 0 },
-    { field: "field4", label: "UV Index", unit: "UVI", icon: "🟣", color: "#a855f7", min: 0, max: 12, decimals: 2 },
-    { field: "field5", label: "PM2.5 Dust", unit: "µg/m³", icon: "🌫️", color: "#ef4444", min: 0, max: 150, decimals: 0 },
-    { field: "field6", label: "PM10 Coarse", unit: "µg/m³", icon: "🌪️", color: "#f43f5e", min: 0, max: 250, decimals: 0 },
-    { field: "field7", label: "PM1.0 Fine", unit: "µg/m³", icon: "🔬", color: "#fb7185", min: 0, max: 150, decimals: 0 },
-    { field: "field8", label: "Soil Moisture", unit: "%", icon: "🌱", color: "#10b981", min: 0, max: 100, decimals: 1 }
+    { field: "field1", label: "Temperature", unit: "°C", icon: "🌡️", color: "#ff7a00", min: 0, max: 50, decimals: 1 },
+    { field: "field2", label: "Humidity", unit: "%", icon: "💧", color: "#00e5ff", min: 0, max: 100, decimals: 0 },
+    { field: "field3", label: "Ambient Light", unit: "Lux", icon: "☀️", color: "#ffea00", min: 0, max: 2000, decimals: 0 },
+    { field: "field4", label: "UV Index", unit: "UVI", icon: "🟣", color: "#e040fb", min: 0, max: 12, decimals: 2 },
+    { field: "field5", label: "PM2.5 Dust", unit: "µg/m³", icon: "🌫️", color: "#ff1744", min: 0, max: 150, decimals: 0 },
+    { field: "field6", label: "PM10 Coarse", unit: "µg/m³", icon: "🌪️", color: "#ff2a85", min: 0, max: 250, decimals: 0 },
+    { field: "field7", label: "PM1.0 Fine", unit: "µg/m³", icon: "🔬", color: "#818cf8", min: 0, max: 150, decimals: 0 },
+    { field: "field8", label: "Soil Moisture", unit: "%", icon: "🌱", color: "#00e676", min: 0, max: 100, decimals: 1 }
   ]
 };
 
@@ -1039,6 +1051,22 @@ function renderTelemetryGrid() {
   grid.appendChild(locCard);
 }
 
+function applyChartBtnStyle(btn, f, isActive) {
+  if (isActive) {
+    btn.style.color = '#ffffff';
+    btn.style.borderColor = f.color || 'var(--accent)';
+    btn.style.background = (f.color || '#38bdf8') + '33';
+    btn.style.boxShadow = `0 0 12px ${(f.color || '#38bdf8')}55`;
+    btn.style.opacity = '1';
+  } else {
+    btn.style.color = 'var(--subtext)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = '#090e1a';
+    btn.style.boxShadow = 'none';
+    btn.style.opacity = '0.55';
+  }
+}
+
 function renderChartControls() {
   const container = document.getElementById('chartToggleGroup');
   container.innerHTML = '';
@@ -1047,84 +1075,280 @@ function renderChartControls() {
     if (chartMetrics[f.field] === undefined) chartMetrics[f.field] = true;
 
     const btn = document.createElement('button');
-    btn.className = `btn-chart ${chartMetrics[f.field] ? 'active' : ''}`;
+    const isActive = chartMetrics[f.field];
+    btn.className = `btn-chart ${isActive ? 'active' : ''}`;
     btn.id = `btnChart_${f.field}`;
-    btn.style.color = chartMetrics[f.field] ? (f.color || 'var(--accent)') : 'var(--subtext)';
-    btn.innerHTML = `<span style="margin-right:4px;">${f.icon || '📊'}</span> ${f.label}`;
+    applyChartBtnStyle(btn, f, isActive);
+    btn.innerHTML = `<span style="font-size:0.95rem;">${f.icon || '📊'}</span> ${f.label}`;
     btn.onclick = () => {
       chartMetrics[f.field] = !chartMetrics[f.field];
-      btn.classList.toggle('active', chartMetrics[f.field]);
-      btn.style.color = chartMetrics[f.field] ? (f.color || 'var(--accent)') : 'var(--subtext)';
+      const nowActive = chartMetrics[f.field];
+      btn.classList.toggle('active', nowActive);
+      applyChartBtnStyle(btn, f, nowActive);
       drawTelemetryChart();
     };
     container.appendChild(btn);
   });
 }
 
+let chartHoverIdx = null;
+let chartEventsAttached = false;
+
+function ensureChartEvents(canvas) {
+  if (chartEventsAttached) return;
+  chartEventsAttached = true;
+
+  function handleMove(clientX) {
+    if (!nodeFeeds || nodeFeeds.length < 2) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const pad = { top: 25, right: 35, bottom: 35, left: 52 };
+    const plotW = rect.width - pad.left - pad.right;
+    if (x < pad.left || x > rect.width - pad.right) {
+      chartHoverIdx = null;
+    } else {
+      const stepX = plotW / (nodeFeeds.length - 1);
+      chartHoverIdx = Math.max(0, Math.min(nodeFeeds.length - 1, Math.round((x - pad.left) / stepX)));
+    }
+    drawTelemetryChart();
+  }
+
+  canvas.addEventListener('mousemove', (e) => handleMove(e.clientX));
+  canvas.addEventListener('mouseleave', () => {
+    chartHoverIdx = null;
+    drawTelemetryChart();
+  });
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) handleMove(e.touches[0].clientX);
+  }, { passive: true });
+  canvas.addEventListener('touchend', () => {
+    chartHoverIdx = null;
+    drawTelemetryChart();
+  });
+}
+
+function formatShortTime(isoStr) {
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch (e) {
+    return '';
+  }
+}
+
 function drawTelemetryChart() {
   const canvas = document.getElementById('telemetryChart');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  ensureChartEvents(canvas);
 
+  const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
+  const H = 290;
   canvas.width = rect.width * dpr;
-  canvas.height = 240 * dpr;
+  canvas.height = H * dpr;
   ctx.scale(dpr, dpr);
 
   const W = rect.width;
-  const H = 240;
-  const pad = { top: 20, right: 20, bottom: 30, left: 45 };
+  const pad = { top: 25, right: 35, bottom: 35, left: 52 };
 
   ctx.clearRect(0, 0, W, H);
 
   if (nodeFeeds.length < 2) {
     ctx.fillStyle = '#64748b';
-    ctx.font = '13px sans-serif';
+    ctx.font = '13px -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Waiting for telemetry feeds for trend plotting...', W / 2, H / 2);
     return;
-  }
-
-  // Draw Grid lines
-  ctx.strokeStyle = '#334155';
-  ctx.lineWidth = 1;
-  for (let y = pad.top; y <= H - pad.bottom; y += 45) {
-    ctx.beginPath();
-    ctx.moveTo(pad.left, y);
-    ctx.lineTo(W - pad.right, y);
-    ctx.stroke();
   }
 
   const plotW = W - pad.left - pad.right;
   const plotH = H - pad.top - pad.bottom;
   const stepX = plotW / (nodeFeeds.length - 1);
 
-  NODE.fields.forEach(f => {
-    if (!chartMetrics[f.field]) return;
+  // 1. Sleek dark plot background
+  ctx.fillStyle = '#080d1a';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(pad.left, pad.top, plotW, plotH, 8);
+  else ctx.rect(pad.left, pad.top, plotW, plotH);
+  ctx.fill();
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  ctx.stroke();
 
-    ctx.strokeStyle = f.color || '#38bdf8';
-    ctx.lineWidth = 2;
+  // 2. Dashed Grid lines & Y-Axis Percentage Labels
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = 'rgba(51, 65, 85, 0.45)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (plotH / 4) * i;
     ctx.beginPath();
-    let started = false;
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(pad.left + plotW, y);
+    ctx.stroke();
 
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${100 - i * 25}%`, pad.left - 8, y + 3);
+  }
+  ctx.setLineDash([]);
+
+  // 3. X-Axis Time Labels
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(formatShortTime(nodeFeeds[0].created_at), pad.left, H - 12);
+
+  if (nodeFeeds.length >= 4) {
+    ctx.textAlign = 'center';
+    const mid = Math.floor(nodeFeeds.length / 2);
+    ctx.fillText(formatShortTime(nodeFeeds[mid].created_at), pad.left + plotW / 2, H - 12);
+  }
+
+  ctx.textAlign = 'right';
+  ctx.fillText(formatShortTime(nodeFeeds[nodeFeeds.length - 1].created_at), pad.left + plotW, H - 12);
+
+  // 4. Plot Active Field Curves
+  const activeFields = NODE.fields.filter(f => chartMetrics[f.field]);
+
+  activeFields.forEach(f => {
+    const pts = [];
     nodeFeeds.forEach((item, idx) => {
       const val = parseVal(item[f.field]);
       if (val === null) return;
-
       const norm = Math.max(0, Math.min(1, (val - f.min) / (f.max - f.min)));
       const x = pad.left + idx * stepX;
       const y = (H - pad.bottom) - norm * plotH;
+      pts.push({ x, y, val });
+    });
 
-      if (!started) {
-        ctx.moveTo(x, y);
-        started = true;
-      } else {
-        ctx.lineTo(x, y);
-      }
+    if (pts.length < 2) return;
+
+    // Glowing vibrant line
+    ctx.save();
+    ctx.shadowColor = f.color;
+    ctx.shadowBlur = 10;
+    ctx.strokeStyle = f.color;
+    ctx.lineWidth = 2.8;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    ctx.beginPath();
+    pts.forEach((pt, i) => {
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
     });
     ctx.stroke();
+    ctx.restore();
+
+    // Subtle area gradient fill if 1 or 2 fields are active
+    if (activeFields.length <= 2) {
+      ctx.save();
+      const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+      grad.addColorStop(0, f.color + '26');
+      grad.addColorStop(1, f.color + '00');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, H - pad.bottom);
+      pts.forEach(pt => ctx.lineTo(pt.x, pt.y));
+      ctx.lineTo(pts[pts.length - 1].x, H - pad.bottom);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Circular data points
+    pts.forEach((pt, i) => {
+      const isHovered = (chartHoverIdx === i);
+      const r = isHovered ? 5.5 : 3.2;
+
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = f.color;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, isHovered ? 2.8 : 1.6, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    });
+
+    // Latest value badge at line end
+    const lastPt = pts[pts.length - 1];
+    ctx.font = 'bold 10px -apple-system, sans-serif';
+    const valStr = `${lastPt.val.toFixed(f.decimals || 0)} ${f.unit || ''}`;
+    const textWidth = ctx.measureText(valStr).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.fillRect(lastPt.x - textWidth - 8, lastPt.y - 18, textWidth + 8, 14);
+    ctx.strokeStyle = f.color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(lastPt.x - textWidth - 8, lastPt.y - 18, textWidth + 8, 14);
+    ctx.fillStyle = f.color;
+    ctx.textAlign = 'left';
+    ctx.fillText(valStr, lastPt.x - textWidth - 4, lastPt.y - 7);
   });
+
+  // 5. Interactive Hover Crosshair & Tooltip
+  if (chartHoverIdx !== null && nodeFeeds[chartHoverIdx]) {
+    const item = nodeFeeds[chartHoverIdx];
+    const hoverX = pad.left + chartHoverIdx * stepX;
+
+    // Vertical dashed guideline
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(hoverX, pad.top);
+    ctx.lineTo(hoverX, H - pad.bottom);
+    ctx.stroke();
+    ctx.restore();
+
+    // Prepare tooltip lines
+    const tTime = formatShortTime(item.created_at);
+    const tipLines = [{ text: `Entry #${item.entry_id} (${tTime})`, color: '#38bdf8', bold: true }];
+    activeFields.forEach(f => {
+      const v = parseVal(item[f.field]);
+      const vStr = v !== null ? `${v.toFixed(f.decimals || 0)} ${f.unit || ''}` : '--';
+      tipLines.push({ text: `${f.icon} ${f.label}: ${vStr}`, color: f.color });
+    });
+
+    // Measure box size
+    ctx.font = '11px -apple-system, sans-serif';
+    let maxW = 0;
+    tipLines.forEach(l => {
+      const w = ctx.measureText(l.text).width;
+      if (w > maxW) maxW = w;
+    });
+    const boxW = maxW + 22;
+    const boxH = tipLines.length * 18 + 12;
+    let boxX = hoverX + 12;
+    if (boxX + boxW > W - pad.right) boxX = hoverX - boxW - 12;
+    let boxY = pad.top + 8;
+
+    // Draw Tooltip Box
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+    else ctx.rect(boxX, boxY, boxW, boxH);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Render tooltip text
+    tipLines.forEach((l, idx) => {
+      ctx.fillStyle = l.color;
+      ctx.font = l.bold ? 'bold 11px -apple-system, sans-serif' : '600 11px -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(l.text, boxX + 11, boxY + 18 + idx * 18);
+    });
+  }
 }
 
 function renderHistoryTable() {
