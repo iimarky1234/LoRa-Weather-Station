@@ -1,0 +1,139 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\makeatletter
+\newcommand{\linebreakand}{%
+\end{@IEEEauthorhalign}%
+\hfill\mbox{}\par
+\mbox{}\hfill\begin{@IEEEauthorhalign}%
+}
+\makeatother
+
+\begin{document}
+\title{LoRa-Based Climate Monitoring System for Large-Scale Farms and Greenhouses: A Mini Literature Review}
+\author{
+\IEEEauthorblockN{Nguyen Luong Gia Triet}
+\IEEEauthorblockA{\textit{FPT University - IA2014 - Group 2} \\
+trietn31@gmail.com \\
+ORCID: 0009-0006-2792-0802}
+\and
+\IEEEauthorblockN{Duong Duc Quang}
+\IEEEauthorblockA{\textit{FPT University - IA2014 - Group 2} \\
+duongquang2208@gmail.com \\
+ORCID: 0009-0003-5452-9815}
+\linebreakand
+\IEEEauthorblockN{Phan Tan Anh Khoi}
+\IEEEauthorblockA{\textit{FPT University - IA2014 - Group 2} \\
+pkhoi6261@gmail.com \\
+ORCID: 0009-0008-5517-5410}
+\and
+\IEEEauthorblockN{Nguyen Thai Thinh}
+\IEEEauthorblockA{\textit{FPT University - IA2014 - Group 2} \\
+nguyenthaithinh13092007@gmail.com \\
+ORCID: 0009-0001-6356-5258}
+}
+\maketitle
+\begin{abstract}
+Large agricultural areas are usually far from residential zones, where Wi-Fi is unavailable and cellular networks (3G/4G) are unstable or expensive, while greenhouse microclimate (air temperature, humidity, light) changes quickly and is hard to monitor manually. LoRa and LoRaWAN offer multi-kilometer range, low power consumption, and no recurring per-node telecommunication fees. This mini literature review compares six published studies on LoRa/LoRaWAN weather and environmental monitoring in terms of network topology, hardware, sensors, power management, and field range. Based on the identified gaps, we present our ESP32- and LoRa-based climate monitoring station for large-scale farms and greenhouses and discuss its current urban range limitation.
+\end{abstract}
+
+\vspace{4pt}
+\noindent \textbf{\textit{Index Terms}---Climate monitoring, greenhouse microclimate, Internet of Things (IoT), large-scale agriculture, LoRa, LoRaWAN, wireless sensor networks (WSN).}
+
+\section{Introduction}
+Environmental and meteorological monitoring supports agricultural planning, crop management, and natural disaster prevention \cite{dajnowski2024, hidayat2019, zennaro2025}, and keeping parameters such as temperature, humidity, and soil moisture in balance helps improve crop yield and quality \cite{dajnowski2024, hidayat2019, lopez2025}. Yet real-time monitoring remains difficult. Large farms are spread over wide zones far from residential centers, where Wi-Fi is absent and cellular networks often have weak coverage (``blank spots'') or require recurring subscription fees for every sensor node \cite{hidayat2019, zennaro2025, lopez2025, pietrosemoli2019}. In greenhouses, air temperature, humidity, and light intensity directly control plant growth and can fluctuate rapidly, while manual monitoring is labor-intensive, discontinuous, and slow to detect harmful changes.
+
+LoRa and the LoRaWAN protocol operate in unlicensed sub-GHz ISM bands, reach several kilometers with low energy use \cite{dajnowski2024, murdyantoro2019}, and avoid recurring data fees \cite{pietrosemoli2019}. This review is guided by the question: \textit{How can a low-power climate monitoring system using LoRa technology be designed to stably collect environmental data in large-scale farms and greenhouses where Wi-Fi and cellular infrastructure is limited?} We review six papers \cite{dajnowski2024, hidayat2019, zennaro2025, lopez2025, pietrosemoli2019, murdyantoro2019} and justify our station design.
+
+\section{Wireless Communication and Network Architectures}
+
+\subsection{Comparison with Traditional Wireless Technologies}
+BLE, Zigbee, and Wi-Fi modules generally operate under 100 m \cite{murdyantoro2019}, and consumer weather stations such as the AcuRite 5-in-1 and La Crosse WS-2300 reach only 25--100 m to the indoor console \cite{pietrosemoli2019}. Extending Wi-Fi with special antennas is costly and needs constant power, which was unavailable in the high-Andean zones of \cite{lopez2025}. Cellular modems and satellite transmitters typically draw 4 W and 50 W versus about 0.1 mW for LoRaWAN \cite{zennaro2025}. Traditional weather stations can cost many thousands of dollars (a Kyrgyz news report cited USD 80,000) versus about USD 1,000 for IoT/LoRaWAN stations; cellular adds a recurring cost per sensor, whereas LoRaWAN's is limited to maintenance and the gateway's cellular service \cite{zennaro2025}. LoRa uses Chirp Spread Spectrum (CSS) modulation in ISM bands such as 433, 868, and 915 MHz and is resilient to interference \cite{lopez2025, murdyantoro2019}.
+
+\subsection{LoRa Point-to-Point vs. LoRaWAN Star Topologies}
+\begin{itemize}
+    \item \textbf{LoRaWAN star-of-stars:} Dajnowski et al. \cite{dajnowski2024}, Zennaro et al. \cite{zennaro2025}, and Pietrosemoli et al. \cite{pietrosemoli2019} send end-node payloads to a multi-channel gateway (e.g., the 8-channel Dragino LPS8 \cite{dajnowski2024} or Milesight UG67 \cite{zennaro2025}), which forwards them over TCP/IP to Network and Application Servers \cite{dajnowski2024, zennaro2025, pietrosemoli2019}, such as The Things Network (TTN) \cite{dajnowski2024, pietrosemoli2019}. Dajnowski et al. describe AES128 encryption with three keys (\texttt{AppSKey}, \texttt{DevAddr}, \texttt{NwkSKey}) \cite{dajnowski2024}; Pietrosemoli et al. state that user traffic is encrypted from the end node to the Application server \cite{pietrosemoli2019}.
+    \item \textbf{Point-to-point (P2P) and gateway bridges:} Hidayat et al. \cite{hidayat2019}, Lopez et al. \cite{lopez2025}, and Murdyantoro et al. \cite{murdyantoro2019} link transmitter nodes to a local receiver or gateway (a second ESP32 LoRa node \cite{hidayat2019, lopez2025} or an LG01-S gateway \cite{murdyantoro2019}) that uploads data to a cloud server over Wi-Fi \cite{hidayat2019, lopez2025, murdyantoro2019}. Hidayat et al. explicitly choose P2P LoRa \cite{hidayat2019}. Lopez et al. call their system LoRaWAN-based, but the described architecture has only a sender node, a receiver node, and a custom IoT server, with no LoRaWAN network server, so we group it with the P2P designs \cite{lopez2025}.
+\end{itemize}
+
+\subsection{Data Resilience and Visualization}
+Because rural Internet connections are unstable, Hidayat et al. \cite{hidayat2019} applied a Local Management Subsystem (LMS) and Global Management Subsystem (GMS) framework: their gateway uses an RTC DS3231 for timestamps and an SD card to store packets locally when the Internet is down, then uploads them when it returns. Zennaro et al. \cite{zennaro2025} built a Disruption Tolerant Gateway (DTG) on a Milesight UG67 with MQTT QoS 2 (``exactly once''); its internal memory can hold more than two years of messages from one weather station during cellular outages. For visualization, \cite{dajnowski2024} and \cite{murdyantoro2019} used ThingSpeak (a channel stores up to 8 fields, and \cite{dajnowski2024} had to split the cloud solution into multiple channels), while \cite{zennaro2025} and \cite{lopez2025} run their own servers (InfluxDB; Laravel REST API with MySQL) with Grafana dashboards and alerts via email, Telegram, or WhatsApp.
+
+\subsection{Propagation Range and Obstacle Effects}
+LoRa can reach 10 km or more in unobstructed environments \cite{dajnowski2024, murdyantoro2019}, but real performance depends on line of sight (LoS). In open high-altitude terrain in Peru (3800--4000 m.a.s.l.), Lopez et al. \cite{lopez2025} reported a 100\% successful transmission rate over 10 km in LoS and over 5 km in a rural farming area with scattered houses. In contrast, Hidayat et al. \cite{hidayat2019} tested 915 MHz TTGO LoRa32 modules among buildings and trees: the LoS zone (D) reached 800 m with an average RSSI of $-114$ dB and 20\% packet loss; zones with trees and buildings (A and C) reached 400 m; and a zone blocked by a 39 m building (B) reached only 200 m with $-124$ dB and 80\% packet loss. Obstacles can thus strongly reduce LoRa range, although the two studies used different hardware and sites.
+
+\begin{table*}[t]
+\centering
+\caption{Comparison of Reviewed LoRa/LoRaWAN Weather Monitoring Systems and Proposed Project Design}
+\label{tab:comparison}
+\scriptsize
+\renewcommand{\arraystretch}{1.05}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{1.7cm} >{\raggedright\arraybackslash}p{2.3cm} >{\raggedright\arraybackslash}p{3.4cm} >{\raggedright\arraybackslash}p{2.7cm} >{\raggedright\arraybackslash}p{2.5cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Study} & \textbf{MCU \& LoRa} & \textbf{Parameters \& Sensors} & \textbf{Network \& Storage} & \textbf{Power} & \textbf{Range \& Findings / Limitations} \\
+\midrule
+Dajnowski et al. (2024) \cite{dajnowski2024} & Arduino MCU, Dragino LoRa shield, LPS8 gateway & Temp., humidity (DHT-11/22; BME280 as alternative), pressure, wind speed/direction, rain, light, air quality (MQ-135) & LoRaWAN, TTN, ThingSpeak, Flask web GUI & Battery (solar panels proposed as future work) & No range test (1--10 km quoted); Arduino memory limits; condensation; fast battery drain. \\
+\addlinespace[1pt]
+Hidayat et al. (2019) \cite{hidayat2019} & ESP32 TTGO LoRa32 V2 (sender \& gateway) & Temp., humidity (DHT22), light (TSL2561) & P2P LoRa 915 MHz to Wi-Fi gateway; RTC DS3231 + SD card & Battery + deep sleep & 800 m in LoS (20\% loss); 200--400 m with buildings/trees (up to 80\% loss). \\
+\addlinespace[1pt]
+Zennaro et al. (2025) \cite{zennaro2025} & Commercial LoRaWAN nodes, Milesight UG67 DTG & Temp., humidity, pressure, irradiation (MeteoHelix), wind, rain, soil moisture (S2105), tilt, river level & LoRaWAN to cellular via MQTT QoS 2; InfluxDB, Grafana & MeteoHelix: small solar panel + Li-ion; gateway: 305 Wp solar + 100 Ah battery & Sensor links to 1.5 km (Tatyr); temp. within 0.5$^\circ$C of reference 96.2\% of the time. \\
+\addlinespace[1pt]
+Lopez et al. (2025) \cite{lopez2025} & ESP32 WROOM 32, Ebyte E220-900T22D, MAX485 & Air temp./humidity (CWT-TH04S), soil temp. (DS18B20), solar radiation, wind speed/direction; soil moisture, pressure also listed & LoRa 915 MHz to ESP32 Wi-Fi receiver; Laravel REST API, MySQL, Grafana & 37 W solar panel, 8000 mAh 18650 battery, sleep + sensor relay & 10 km (LoS), 5 km (scattered houses), 100\% delivery; cost $\sim$USD 320. \\
+\addlinespace[1pt]
+Pietrosemoli et al. (2019) \cite{pietrosemoli2019} & BSF32 or LoPy4 (ESP32), SX1276, RXB6 433 MHz receiver & Intercepts AcuRite/La Crosse sensors (temp., humidity, wind, rain) + BMP180 pressure & 433 MHz bridged to 868 MHz LoRaWAN (TTN) & BSF32: 2000 mAh Li-ion; LoPy4: 48 Wh pack, 32.8 $\mu$A sleep & No field range test; est. battery life 123 days (BSF32), 414 days (LoPy4) at 15 min. \\
+\addlinespace[1pt]
+Murdyantoro et al. (2019) \cite{murdyantoro2019} & Arduino UNO Rev3, LoRa shield, LG01-S gateway & Temp., humidity (DHT11), pressure (BMP180), raindrop sensor, 3-cup anemometer & LoRa 915 MHz (SF9) to Wi-Fi gateway; ThingSpeak & Power bank & Two nodes tested, values matched ThingSpeak; 5--10 km quoted, not measured; no local backup, soil, UV, or dust sensing reported. \\
+\addlinespace[1pt]
+\textbf{Proposed (Group 2)} & ESP32, MKE-M24 Ra-02SH, 525 MHz 3.5 dBi antenna & Air temp./humidity (AM2301B), light (BH1750), UV (LTR390), soil moisture (Grove), fine dust (APM10) & LoRa without Internet; RTC DS1307 + MicroSD reader & Direct power + 10,000 mAh Li-Po backup & Theoretical 5--10 km (rural), $\sim$1 km (urban tests); no wind sensor. \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\section{Embedded Hardware, Sensors, and Power}
+
+\subsection{Microcontrollers and Sensors}
+Dajnowski et al. \cite{dajnowski2024} and Murdyantoro et al. \cite{murdyantoro2019} use Arduino boards; \cite{dajnowski2024} reported that Arduino memory had to be carefully managed and was stretched to its limits with multiple sensors. Hidayat et al. \cite{hidayat2019}, Lopez et al. \cite{lopez2025}, and Pietrosemoli et al. (LoPy4) \cite{pietrosemoli2019} use ESP32-based platforms with sleep modes, and the receivers in \cite{hidayat2019, lopez2025} use built-in Wi-Fi. The LoPy4 has more memory and a faster clock than the BSF32 board but consumes more power when active \cite{pietrosemoli2019}. Sensor choices (see Table~\ref{tab:comparison}) vary by environment:
+\begin{itemize}
+    \item \textbf{Temperature, humidity, pressure:} low-cost DHT11, DHT22, BMP180, and BME280 \cite{dajnowski2024, hidayat2019, pietrosemoli2019, murdyantoro2019}; industrial RS485 sensors in \cite{lopez2025}; and the MeteoHelix IoT PRO, which can meet WMO quality standards, in \cite{zennaro2025}.
+    \item \textbf{Light:} TSL2561 \cite{hidayat2019}, a solar radiation sensor \cite{lopez2025}, or a small solar panel used for irradiation \cite{zennaro2025}. None of the six papers reports a dedicated UV index sensor.
+    \item \textbf{Soil:} only \cite{zennaro2025} (SenseCAP S2105) and \cite{lopez2025} (DS18B20 soil temperature; soil moisture is listed as a target variable).
+    \item \textbf{Air quality and dust:} \cite{dajnowski2024} uses an MQ-135 gas sensor (CO$_2$, CO, NH$_3$, NO$_x$, smoke); \cite{zennaro2025} mentions PM$_{2.5}$/PM$_{10}$ only in a 10-in-1 sensor (SenseCAP S1000 V2) that was tested but not deployed. No other study monitors fine dust.
+    \item \textbf{Wind and rain:} five of six studies sense wind or rain. Wind speed and direction are reported in \cite{dajnowski2024, lopez2025, pietrosemoli2019}, wind speed only in \cite{murdyantoro2019}, and a wind sensor is deployed in \cite{zennaro2025}. Rain is measured in \cite{dajnowski2024, zennaro2025, pietrosemoli2019} and detected by a raindrop sensor in \cite{murdyantoro2019}; \cite{hidayat2019} measures only temperature, humidity, and light.
+\end{itemize}
+
+\subsection{Power Supply and Energy Saving}
+Many active sensors rapidly drained the battery in \cite{dajnowski2024}. Pietrosemoli et al. \cite{pietrosemoli2019} switch off the 433 MHz receiver (9.9 mA) after reception and use deep sleep (32.8 $\mu$A), giving an estimated 414 days at 15-minute intervals with a 48 Wh pack. Lopez et al. \cite{lopez2025} use a 37 W solar panel and an 8000 mAh 18650 battery, with a relay that cuts sensor power during sleep (about 95--120 s per cycle) and a 10--15 s warm-up before each reading.
+
+\section{Research Gaps and Proposed System}
+
+\subsection{Literature Gaps}
+\begin{enumerate}
+    \item \textbf{Incomplete microclimate and air-quality sensing:} Most studies focus on wind and rain \cite{dajnowski2024, zennaro2025, pietrosemoli2019, murdyantoro2019}; none of the six reports a greenhouse deployment or combines soil moisture, light, UV index, and fine dust sensing in one low-cost node---the parameters our group selected.
+    \item \textbf{Memory and local logging:} Arduino stations face memory limits \cite{dajnowski2024}, and the Arduino prototype in \cite{murdyantoro2019} reports no local backup for network failures.
+    \item \textbf{Power interruption:} The stations in \cite{zennaro2025, lopez2025} rely on solar panels and batteries, whereas our scenario normally has direct electrical power that can be interrupted. Zennaro et al. note that solar and battery power is needed to prevent interruptions even for grid-connected gateways \cite{zennaro2025}. Our design therefore adds a backup Li-Po battery.
+\end{enumerate}
+
+\subsection{Proposed Architecture}
+Unlike the Arduino prototypes with reported memory limits \cite{dajnowski2024}, our station uses an \textbf{ESP32} microcontroller, as in \cite{hidayat2019, lopez2025, pietrosemoli2019}. Five sensors cover six parameters: an \textbf{AM2301B} (air temperature and humidity), a \textbf{BH1750} $\text{I}^2\text{C}$ sensor (light intensity, a role similar to the TSL2561 in \cite{hidayat2019}), an \textbf{LTR390} (UV index), a \textbf{Grove Soil Moisture Sensor} (soil moisture, measured in \cite{zennaro2025} and listed as a target variable in \cite{lopez2025}), and an \textbf{APM10} (fine dust). Data are sent without the Internet through an \textbf{MKE-M24 Ra-02SH} LoRa module with a \textbf{525 MHz 3.5 dBi} antenna. An \textbf{MKE-M09 RTC DS1307} and a \textbf{MicroSD reader} provide timestamping and local logging, similar to the RTC and SD card pairing in \cite{hidayat2019}. The station normally runs on direct electrical power, with a \textbf{10,000 mAh Li-Po battery} as backup during interruptions.
+
+\subsection{Limitations}
+First, our prototype has no wind speed or direction sensors, unlike the outdoor stations in \cite{dajnowski2024, zennaro2025, lopez2025, pietrosemoli2019, murdyantoro2019}. This matters little in greenhouses, but wind is relevant outdoors; wind affects the metabolism rate of many plant species \cite{dajnowski2024}. Second, the module and antenna can theoretically reach about \textbf{5--10 km} in open rural areas, the same order as the results in \cite{lopez2025} and the range quoted in \cite{dajnowski2024}, but our experiments are in an \textbf{urban environment}, where the range is currently about \textbf{1 km}, likely due to dense buildings and non-LoS obstacles like those in \cite{hidayat2019}.
+
+\section{Conclusion}
+LoRa overcomes the sub-100 m range of Wi-Fi and Bluetooth \cite{murdyantoro2019, lopez2025} and avoids per-node subscription costs and the high power draw of cellular modems \cite{zennaro2025}. Building on ESP32-based processing \cite{hidayat2019, lopez2025, pietrosemoli2019}, RTC-timestamped local storage \cite{hidayat2019}, and multi-parameter agricultural sensing \cite{zennaro2025, lopez2025}, our ESP32- and LoRa-based station adds UV, soil moisture, and fine dust sensing, local logging, and a Li-Po backup battery. Despite the current urban range ($\sim$1 km) and the lack of wind sensors, the design targets low-power climate monitoring for large farms and greenhouses; its long-term stability, power consumption, and cost remain to be validated.
+
+\bibliographystyle{IEEEtran}
+\bibliography{ref}
+
+\end{document}
